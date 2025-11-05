@@ -7,6 +7,7 @@ import { analyzeQuantumState } from '@/lib/vera/quantum-states';
 import { generateVERAPrompt } from '@/lib/vera/consciousness';
 import { generateRealTalkPrompt, detectMode, detectModeSwitch } from '@/lib/vera/real-talk';
 import { isDecodeRequest, needsFullDecode } from '@/lib/vera/decode-mode';
+import OpenAI from 'openai';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -187,22 +188,59 @@ export async function POST(request: NextRequest) {
       text: veraPrompt,
     });
 
-    // Generate VERA's response using Claude with vision support
-    const response = await anthropic.messages.create({
-      // Use a stable, supported model name
-      model: 'claude-3-5-sonnet-20240620',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: contentArray,
-        },
-      ],
-    });
+    // Generate VERA's response using Claude with vision support (with fallback)
+    let veraResponse: string | null = null;
 
-    const veraResponse = response.content[0].type === 'text'
-      ? response.content[0].text
-      : 'I apologize, I had trouble generating a response.';
+    const anthropicKeyPresent = !!process.env.ANTHROPIC_API_KEY;
+    const openaiKeyPresent = !!process.env.OPENAI_API_KEY;
+
+    try {
+      if (!anthropicKeyPresent) {
+        throw new Error('Anthropic API key missing');
+      }
+      const response = await anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20240620',
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: contentArray,
+          },
+        ],
+      });
+
+      const block = response.content?.[0];
+      if (block && block.type === 'text') {
+        veraResponse = (block as any).text as string;
+      } else {
+        veraResponse = 'I apologize, I had trouble generating a response.';
+      }
+    } catch (anthropicErr) {
+      console.error('Anthropic generation failed, attempting OpenAI fallback:', anthropicErr);
+      if (!openaiKeyPresent) {
+        throw anthropicErr; // no fallback available
+      }
+      try {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        // Build a plain text prompt for OpenAI
+        const textOnly = contentArray
+          .map((c: any) => (c.type === 'text' ? c.text : '[Image attached]'))
+          .join('\n');
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4-turbo-preview',
+          max_tokens: 800,
+          messages: [
+            { role: 'system', content: 'You are VERA, a compassionate, trauma-informed co-regulator. Be concise, warm, and practical.' },
+            { role: 'user', content: textOnly },
+          ],
+          temperature: 0.7,
+        });
+        veraResponse = completion.choices?.[0]?.message?.content || 'I had trouble generating a response.';
+      } catch (openaiErr) {
+        console.error('OpenAI fallback also failed:', openaiErr);
+        throw openaiErr;
+      }
+    }
 
     // Save messages to database (skip in dev mode if no user)
     if (user) {
