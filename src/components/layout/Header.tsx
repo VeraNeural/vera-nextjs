@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import BreathingOrb from '../orb/BreathingOrb';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -45,6 +47,8 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
   const [showMenu, setShowMenu] = useState(false);
   const [audioContext, setAudioContext] = useState<HTMLAudioElement | null>(null);
   const [currentSoundIndex, setCurrentSoundIndex] = useState(0);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     // Rotate status messages every 4 seconds
@@ -218,6 +222,61 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
           gap: '12px',
           minWidth: '160px',
         }}>
+          {/* Auth Buttons - Show when not authenticated */}
+          {!authLoading && !user && (
+            <>
+              <button
+                onClick={() => router.push('/login')}
+                style={{
+                  padding: '8px 16px',
+                  background: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => router.push('/auth/signup')}
+                style={{
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, var(--orb-purple), var(--orb-blue))',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                Start Trial
+              </button>
+            </>
+          )}
+
+          {/* Only show these controls when authenticated */}
+          {user && (
+            <>
           {/* Theme Toggle Button - MUST BE VISIBLE */}
           <button
             onClick={toggleMenu}
@@ -351,6 +410,8 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
               </svg>
             )}
           </button>
+          </>
+          )}
         </div>
       </header>
 
