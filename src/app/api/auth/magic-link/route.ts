@@ -17,13 +17,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+  const supabase = await createClient();
+  const origin = request.nextUrl.origin;
 
     // Generate OTP token but don't send email (we'll send it ourselves)
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
+        // Always send the callback to the same origin that issued the request
+        emailRedirectTo: `${origin}/api/auth/callback`,
         shouldCreateUser: true,
       },
     });
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     const type = actionUrl.searchParams.get('type');
     
     // Build callback URL with token_hash parameter
-    const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback?token_hash=${token}&type=${type}`;
+  const callbackUrl = `${origin}/api/auth/callback?token_hash=${token}&type=${type}`;
 
     // Send beautiful branded email via Resend
     const emailResult = await resend.emails.send({
