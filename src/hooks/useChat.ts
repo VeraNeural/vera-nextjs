@@ -13,6 +13,7 @@ interface UseChatReturn {
   clearError: () => void;
   threadId: string | null;
   trialExpired: boolean;
+  toggleSave: (id: string) => Promise<void>;
 }
 
 export function useChat(): UseChatReturn {
@@ -260,6 +261,30 @@ export function useChat(): UseChatReturn {
     localStorage.removeItem('vera_current_thread');
   };
 
+  const toggleSave = async (id: string) => {
+    try {
+      const target = messages.find(m => m.id === id) as any;
+      if (!target) return;
+      const current = Boolean(target.is_saved ?? target.isSaved ?? false);
+      const next = !current;
+
+      const res = await fetch(`/api/messages/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_saved: next }),
+      });
+      if (!res.ok) {
+        console.error('Failed to toggle save:', await res.text());
+        return;
+      }
+      const data = await res.json();
+      const updated = data.message;
+      setMessages(prev => prev.map((m: any) => m.id === id ? { ...m, is_saved: updated?.is_saved ?? next, isSaved: updated?.is_saved ?? next } : m));
+    } catch (e) {
+      console.error('Toggle save error:', e);
+    }
+  };
+
   return {
     messages,
     loading,
@@ -269,5 +294,6 @@ export function useChat(): UseChatReturn {
     clearError,
     threadId,
     trialExpired,
+    toggleSave,
   };
 }

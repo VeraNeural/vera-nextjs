@@ -19,7 +19,7 @@ export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   
-  const { messages, loading, sendMessage, clearMessages, threadId, trialExpired } = useChat();
+  const { messages, loading, sendMessage, clearMessages, threadId, trialExpired, toggleSave } = useChat();
   const { trial, loading: trialLoading } = useTrial();
 
   // Redirect to signup if not authenticated
@@ -62,21 +62,7 @@ export default function Home() {
   };
 
   const handleSaveMessage = async (id: string) => {
-    try {
-      const response = await fetch(`/api/messages/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_saved: true }),
-      });
-
-      if (response.ok) {
-        console.log('Message saved successfully:', id);
-      } else {
-        console.error('Failed to save message');
-      }
-    } catch (error) {
-      console.error('Error saving message:', error);
-    }
+    await toggleSave(id);
   };
 
   const handleDeleteMessage = async (id: string) => {
@@ -169,7 +155,7 @@ export default function Home() {
                 role: msg.role,
                 content: msg.content,
                 timestamp,
-                isSaved: false,
+                isSaved: Boolean((msg as any).is_saved ?? (msg as any).isSaved ?? false),
                 imageData: msg.imageData,
               };
             })}
