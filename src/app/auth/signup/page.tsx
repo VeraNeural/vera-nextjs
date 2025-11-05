@@ -51,7 +51,8 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 py-12 relative overflow-hidden" style={{
-      background: 'linear-gradient(180deg, #0a0a1e 0%, #1a1a3e 50%, #1a1535 100%)'
+      background: 'linear-gradient(180deg, #0a0a1e 0%, #1a1a3e 50%, #1a1535 100%)',
+      paddingTop: '80px',
     }}>
       {/* Starfield background effect */}
       <div className="absolute inset-0 opacity-20">
@@ -66,7 +67,7 @@ export default function SignupPage() {
       <div className="max-w-lg w-full flex flex-col items-center gap-6 relative z-10">
         {/* Large breathing orb */}
         <div className="relative mb-4">
-          <BreathingOrb size={280} animate={true} showShimmer={true} />
+          <BreathingOrb size={260} animate={true} showShimmer={true} />
         </div>
 
         {/* VERA title */}
