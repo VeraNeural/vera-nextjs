@@ -40,9 +40,6 @@ export async function POST(request: NextRequest) {
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
-      },
     });
 
     if (linkError) {
@@ -52,6 +49,14 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Extract token from the action_link and build our own redirect URL
+    const actionUrl = new URL(linkData.properties.action_link);
+    const token = actionUrl.searchParams.get('token');
+    const type = actionUrl.searchParams.get('type');
+    
+    // Build callback URL with token_hash parameter
+    const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback?token_hash=${token}&type=${type}`;
 
     // Send beautiful branded email via Resend
     const emailResult = await resend.emails.send({
@@ -71,7 +76,7 @@ export async function POST(request: NextRequest) {
           </p>
 
           <div style="text-align: center; margin: 32px 0;">
-            <a href="${linkData.properties.action_link}" 
+            <a href="${callbackUrl}" 
                style="background: linear-gradient(135deg, #8B5CF6, #3B82F6); 
                       color: white; 
                       padding: 16px 40px; 
