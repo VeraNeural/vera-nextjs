@@ -26,7 +26,12 @@ export default function TrialCornerIndicator({
       if (hoursRemaining >= 24) {
         const days = Math.floor(hoursRemaining / 24);
         const hours = hoursRemaining % 24;
-        setTimeString(`${days}d ${hours}h`);
+        // If we're exactly on a day boundary, show total hours to avoid "2d 0h"
+        if (hours === 0) {
+          setTimeString(`${hoursRemaining}h`);
+        } else {
+          setTimeString(`${days}d ${hours}h`);
+        }
       } else {
         setTimeString(`${hoursRemaining}h`);
       }

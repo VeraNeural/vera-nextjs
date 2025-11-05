@@ -103,7 +103,9 @@ export async function POST(request: NextRequest) {
     // Check if this is a DECODE request (routes to OpenAI)
     if (needsFullDecode(message)) {
       // Route to decode API which uses OpenAI for deep analysis
-      const decodeResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/decode`, {
+      // Use current request origin to avoid relying on NEXT_PUBLIC_APP_URL env
+      const origin = new URL(request.url).origin;
+      const decodeResponse = await fetch(`${origin}/api/decode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
