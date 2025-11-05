@@ -589,9 +589,10 @@ export default function InputContainer({
       <p
         style={{
           marginTop: '8px',
-          fontSize: '11px',
+          fontSize: '10px',
           color: 'var(--text-tertiary)',
           textAlign: 'center',
+          opacity: 0.6,
         }}
       >
         VERA is not a medical device and does not replace therapy. She complements your care.
