@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Supabase auth error:', error);
+      console.error('Supabase auth error:', error.message, error);
       return NextResponse.json(
-        { error: 'Failed to send magic link' },
+        { error: error.message || 'Failed to send magic link' },
         { status: 500 }
       );
     }
