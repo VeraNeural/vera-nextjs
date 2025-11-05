@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Generate magic link with Supabase
+    // Generate OTP token but don't send email (we'll send it ourselves)
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -29,15 +29,81 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Supabase auth error:', error.message, error);
+      
+      // If Supabase email fails, that's okay - we'll handle it
+      // Continue anyway to send our custom email
+    }
+
+    // Generate a magic link manually using Supabase's generateLink
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
+      },
+    });
+
+    if (linkError) {
+      console.error('Failed to generate magic link:', linkError);
       return NextResponse.json(
-        { error: error.message || 'Failed to send magic link' },
+        { error: 'Failed to generate magic link' },
         { status: 500 }
       );
     }
 
-    // Note: Supabase sends the email automatically with their template
-    // To customize, go to Supabase Dashboard → Auth → Email Templates
-    // Or disable Supabase emails and use Resend by calling signInWithOtp with { shouldCreateUser: false }
+    // Send beautiful branded email via Resend
+    const emailResult = await resend.emails.send({
+      from: 'VERA <support@veraneural.com>',
+      to: email,
+      subject: 'Your VERA Magic Link ✨',
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <h2 style="color: #8B5CF6; margin-bottom: 16px; font-size: 28px; font-weight: 600;">Welcome to VERA</h2>
+          
+          <p style="color: #374151; font-size: 16px; line-height: 1.6; margin-bottom: 16px;">
+            Your AI Co-Regulator is ready to support your nervous system regulation journey.
+          </p>
+
+          <p style="color: #374151; font-size: 16px; margin-bottom: 32px;">
+            Click the button below to begin your 48-hour free trial:
+          </p>
+
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${linkData.properties.action_link}" 
+               style="background: linear-gradient(135deg, #8B5CF6, #3B82F6); 
+                      color: white; 
+                      padding: 16px 40px; 
+                      text-decoration: none; 
+                      border-radius: 12px; 
+                      font-weight: 600;
+                      font-size: 16px;
+                      display: inline-block;">
+              ✨ Begin Your Journey
+            </a>
+          </div>
+
+          <p style="color: #6B7280; font-size: 14px; margin-top: 32px; line-height: 1.6;">
+            This link expires in 60 minutes. If you didn't request this, you can safely ignore this email.
+          </p>
+
+          <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 32px 0;">
+
+          <p style="color: #9CA3AF; font-size: 12px; line-height: 1.5;">
+            VERA is not a medical device and does not replace therapy. She complements your care.
+          </p>
+        </div>
+      `,
+    });
+
+    if (emailResult.error) {
+      console.error('Resend email error:', emailResult.error);
+      return NextResponse.json(
+        { error: 'Failed to send email' },
+        { status: 500 }
+      );
+    }
+
+    console.log('Magic link email sent successfully via Resend:', emailResult.data);
 
     return NextResponse.json({ success: true });
   } catch (error) {
