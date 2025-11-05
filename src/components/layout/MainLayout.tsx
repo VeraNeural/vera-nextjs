@@ -99,12 +99,7 @@ export default function MainLayout({ children, showSidebar = true }: MainLayoutP
         {children}
       </div>
 
-      {/* Theme provider context */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `window.VERA_THEME = { current: '${theme}', set: ${handleThemeChange.toString()} };`,
-        }}
-      />
+      {/* Removed inline script injection to avoid hydration issues in production */}
     </>
   );
 }

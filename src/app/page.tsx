@@ -2,17 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import MainLayout from '@/components/layout/MainLayout';
-import Header from '@/components/layout/Header';
-import Sidebar from '@/components/layout/Sidebar';
-import ChatContainer from '@/components/chat/ChatContainer';
-import WelcomeStateExact from '@/components/chat/WelcomeStateExact';
-import InputContainer from '@/components/chat/InputContainer';
+// Load interactive components on client only to avoid hydration mismatches
+const Header = dynamic(() => import('@/components/layout/Header'), { ssr: false });
+const Sidebar = dynamic(() => import('@/components/layout/Sidebar'), { ssr: false });
+const ChatContainer = dynamic(() => import('@/components/chat/ChatContainer'), { ssr: false });
+const WelcomeStateExact = dynamic(() => import('@/components/chat/WelcomeStateExact'), { ssr: false });
+const InputContainer = dynamic(() => import('@/components/chat/InputContainer'), { ssr: false });
 import { useChat } from '@/hooks/useChat';
 import { useTrial } from '@/hooks/useTrial';
 import { useAuth } from '@/hooks/useAuth';
-import PlanPicker from '@/components/billing/PlanPicker';
-import TrialCornerIndicator from '@/components/trial/TrialCornerIndicator';
+const PlanPicker = dynamic(() => import('@/components/billing/PlanPicker'), { ssr: false });
+const TrialCornerIndicator = dynamic(() => import('@/components/trial/TrialCornerIndicator'), { ssr: false });
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Closed by default
