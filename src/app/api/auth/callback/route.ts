@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
   let userData = null;
+  let sessionData = null;
 
   // Handle magic link (token_hash)
   if (token_hash && type) {
@@ -32,7 +34,23 @@ export async function GET(request: NextRequest) {
     }
     
     userData = data?.user;
+    sessionData = data?.session;
     console.log('✅ Magic link verified for user:', userData?.email);
+    console.log('Session created:', sessionData ? 'YES' : 'NO');
+    
+    // Explicitly set the session to ensure cookies are written
+    if (sessionData) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: sessionData.access_token,
+        refresh_token: sessionData.refresh_token,
+      });
+      
+      if (sessionError) {
+        console.error('❌ Failed to set session:', sessionError);
+      } else {
+        console.log('✅ Session explicitly set');
+      }
+    }
   }
   // Handle PKCE flow (code)
   else if (code) {
@@ -44,7 +62,9 @@ export async function GET(request: NextRequest) {
     }
     
     userData = data?.user;
+    sessionData = data?.session;
     console.log('✅ Code exchanged for user:', userData?.email);
+    console.log('Session created:', sessionData ? 'YES' : 'NO');
   }
   else {
     console.error('❌ No auth parameters found');
@@ -77,6 +97,13 @@ export async function GET(request: NextRequest) {
         console.log('✅ User entry created');
       }
     }
+  }
+
+  // Verify session was set before redirecting
+  if (sessionData) {
+    console.log('✅ Session established, safe to redirect');
+  } else {
+    console.error('⚠️ No session data, but proceeding with redirect');
   }
 
   console.log('🔄 Redirecting to home page');
