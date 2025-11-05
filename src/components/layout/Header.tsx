@@ -47,6 +47,7 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
   const [showMenu, setShowMenu] = useState(false);
   const [audioContext, setAudioContext] = useState<HTMLAudioElement | null>(null);
   const [currentSoundIndex, setCurrentSoundIndex] = useState(0);
+  const [canPlayAudio, setCanPlayAudio] = useState(false); // requires user interaction
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -68,9 +69,37 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
     }
   }, []);
 
+  // Detect first user interaction to permit audio playback (autoplay policies)
+  useEffect(() => {
+    if (canPlayAudio) return;
+    const enable = () => setCanPlayAudio(true);
+    window.addEventListener('pointerdown', enable, { once: true });
+    window.addEventListener('keydown', enable, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', enable as any);
+      window.removeEventListener('keydown', enable as any);
+    };
+  }, [canPlayAudio]);
+
   // Manage ambient sound playback
   useEffect(() => {
-    if (soundEnabled) {
+    // Only start audio after a user gesture
+    if (!soundEnabled) {
+      if (audioContext) {
+        audioContext.pause();
+        audioContext.src = '';
+        setAudioContext(null);
+      }
+      return;
+    }
+
+    if (soundEnabled && !canPlayAudio) {
+      // Defer playback until user interacts
+      console.log('Audio will start after first user interaction');
+      return;
+    }
+
+    if (soundEnabled && canPlayAudio) {
       // Stop any existing audio first
       if (audioContext) {
         audioContext.pause();
@@ -107,12 +136,8 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
         audio.pause();
         audio.src = '';
       };
-    } else if (audioContext) {
-      audioContext.pause();
-      audioContext.src = '';
-      setAudioContext(null);
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, canPlayAudio]);
 
   const toggleSound = () => {
     const newState = !soundEnabled;
