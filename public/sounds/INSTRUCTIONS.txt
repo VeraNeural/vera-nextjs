@@ -1,0 +1,32 @@
+====================================================
+VERA - AMBIENT SOUNDS SETUP
+====================================================
+
+PLEASE ADD YOUR FREESOUND AUDIO FILES HERE
+
+Required files (rename your downloads to match):
+- rain.mp3      (Gentle rain/rainfall sounds)
+- ocean.mp3     (Ocean waves/beach sounds)
+- forest.mp3    (Birds chirping/forest ambience)
+- wind.mp3      (Gentle wind through trees)
+- fire.mp3      (Crackling fireplace sounds)
+- night.mp3     (Peaceful night ambience/crickets)
+
+FORMAT: MP3 files work best
+SIZE: Keep files under 10MB for faster loading
+
+WHERE TO FIND SOUNDS:
+Visit freesound.org and search for:
+- "gentle rain loop"
+- "ocean waves calm"
+- "forest birds morning"
+- "wind trees gentle"
+- "fireplace crackling"
+- "night ambience crickets"
+
+IMPORTANT: Look for sounds with Creative Commons licenses!
+
+After adding files, refresh your browser and click the sound icon
+in the header to test the ambient sound toggle.
+
+====================================================

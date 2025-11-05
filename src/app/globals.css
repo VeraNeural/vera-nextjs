@@ -1,26 +1,522 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
+
+/* ============================================
+   VERA Theme Variables - Exact from vera-pro.html
+   ============================================ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light Theme (Default) */
+  --bg-gradient: linear-gradient(180deg, #E8D5F2 0%, #D4C5F9 100%);
+  --header-bg: rgba(255, 255, 255, 0.7);
+  --container-bg: rgba(255, 255, 255, 0.95);
+  --message-bg: rgb(255, 255, 255);
+  --user-message-bg: linear-gradient(135deg, rgb(200, 180, 230) 0%, rgb(180, 200, 240) 100%);
+  --text-primary: #2D2D3F;
+  --text-secondary: #6B6B7B;
+  --text-soft: #9B9BA5;
+  --border-color: rgba(155, 137, 212, 0.2);
+  --input-bg: #FFFFFF;
+  --orb-1: #B19CD9;
+  --orb-2: #9B8FD4;
+  --orb-3: #7B9EF0;
+  --sidebar-bg: rgba(255, 255, 255, 0.6);
+  --sidebar-text-primary: #2D2D3F;
+  --sidebar-text-secondary: #6B6B7B;
+  --sidebar-text-soft: #9B9BA5;
+  --quick-button-bg: rgba(255, 255, 255, 0.8);
+  --quick-button-hover: rgba(155, 137, 212, 0.2);
+  --breath-circle: rgba(155, 137, 212, 0.1);
+  --dropdown-bg: rgba(255, 255, 255, 0.98);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Dark Theme */
+[data-theme="dark"] {
+  --bg-gradient: radial-gradient(ellipse at top, #151832 0%, #0A0E27 40%, #000 100%);
+  --header-bg: rgba(10, 14, 39, 0.95);
+  --container-bg: rgba(21, 24, 50, 0.95);
+  --message-bg: rgb(30, 30, 50);
+  --user-message-bg: linear-gradient(135deg, rgb(100, 80, 140) 0%, rgb(80, 120, 180) 100%);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.75);
+  --text-soft: rgba(255, 255, 255, 0.5);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --orb-1: #9B59B6;
+  --orb-2: #B19CD9;
+  --orb-3: #64B5F6;
+  --sidebar-bg: rgba(21, 24, 50, 0.6);
+  --sidebar-text-primary: rgba(255, 255, 255, 0.95);
+  --sidebar-text-secondary: rgba(255, 255, 255, 0.75);
+  --sidebar-text-soft: rgba(255, 255, 255, 0.5);
+  --quick-button-bg: rgba(255, 255, 255, 0.05);
+  --quick-button-hover: rgba(155, 89, 182, 0.3);
+  --breath-circle: rgba(100, 181, 246, 0.05);
+  --dropdown-bg: rgba(21, 24, 50, 0.98);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Deep Dark Theme */
+[data-theme="deep"] {
+  --bg-gradient: linear-gradient(180deg, #0A0A0A 0%, #000000 100%);
+  --header-bg: rgba(0, 0, 0, 0.9);
+  --container-bg: rgba(10, 10, 10, 0.95);
+  --message-bg: rgb(20, 20, 20);
+  --user-message-bg: linear-gradient(135deg, rgb(80, 60, 100) 0%, rgb(60, 80, 120) 100%);
+  --text-primary: rgba(255, 255, 255, 0.9);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-soft: rgba(255, 255, 255, 0.4);
+  --border-color: rgba(255, 255, 255, 0.05);
+  --input-bg: rgba(255, 255, 255, 0.02);
+  --orb-1: #6B5B8C;
+  --orb-2: #7B6B9C;
+  --orb-3: #5B7BA6;
+  --sidebar-bg: rgba(10, 10, 10, 0.6);
+  --sidebar-text-primary: rgba(255, 255, 255, 0.95);
+  --sidebar-text-secondary: rgba(255, 255, 255, 0.75);
+  --sidebar-text-soft: rgba(255, 255, 255, 0.5);
+  --quick-button-bg: rgba(255, 255, 255, 0.02);
+  --quick-button-hover: rgba(255, 255, 255, 0.05);
+  --breath-circle: rgba(255, 255, 255, 0.02);
+  --dropdown-bg: rgba(10, 10, 10, 0.98);
+}
+
+/* ============================================
+   Base Styles - Exact from vera-pro.html
+   ============================================ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+  width: 100%;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-gradient);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s ease;
+  width: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ============================================
+   Animations - Exact from vera-pro.html
+   ============================================ */
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+}
+
+@keyframes orbGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(155, 89, 182, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(155, 89, 182, 0.6); }
+}
+
+@keyframes presencePulse {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 0 20px rgba(155, 137, 212, 0.4);
+  }
+  50% { 
+    transform: scale(1.1); 
+    box-shadow: 0 0 40px rgba(155, 137, 212, 0.7);
+  }
+}
+
+@keyframes presenceShimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+@keyframes gentlePulse {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 20px 60px rgba(155, 137, 212, 0.3);
+  }
+  50% { 
+    transform: scale(1.05); 
+    box-shadow: 0 30px 80px rgba(155, 137, 212, 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes orbShimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes titleReveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes subtitleReveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes buttonsReveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes messageAppear {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes avatarPulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(155, 137, 212, 0.3);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 4px 20px rgba(155, 137, 212, 0.5);
+  }
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 8px rgba(155, 137, 212, 0.3);
+  }
+  30% {
+    transform: translateY(-12px);
+    box-shadow: 0 4px 12px rgba(155, 137, 212, 0.5);
+  }
+}
+
+@keyframes buttonShimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+@keyframes sendButtonPulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(155, 137, 212, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(155, 137, 212, 0.5);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes breatheIn {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 40px rgba(155, 137, 212, 0.5);
+  }
+  100% {
+    transform: scale(1.5);
+    box-shadow: 0 0 80px rgba(155, 137, 212, 0.9);
+  }
+}
+
+@keyframes breatheOut {
+  0% {
+    transform: scale(1.5);
+    box-shadow: 0 0 80px rgba(155, 137, 212, 0.9);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 40px rgba(155, 137, 212, 0.5);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes monitoringPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(400px); opacity: 0; }
+}
+
+@keyframes waveAnimation {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+
+@keyframes orbTwinkle {
+  0%, 100% { 
+    box-shadow: 0 0 12px rgba(155, 89, 182, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 18px rgba(155, 89, 182, 0.6);
+  }
+}
+
+@keyframes orbBreathing {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 0.85;
+    box-shadow: 
+      0 0 80px rgba(102, 126, 234, 0.6),
+      0 0 160px rgba(118, 75, 162, 0.4),
+      inset 0 0 60px rgba(177, 156, 217, 0.3);
+  }
+  50% { 
+    transform: scale(1.15);
+    opacity: 1;
+    box-shadow: 
+      0 0 120px rgba(102, 126, 234, 0.8),
+      0 0 240px rgba(118, 75, 162, 0.6),
+      inset 0 0 80px rgba(177, 156, 217, 0.5);
+  }
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--orb-1);
+}
+
+/* Thin scrollbar for threads */
+.threads-section::-webkit-scrollbar {
+  width: 4px;
+}
+
+.threads-section::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+/* ============================================
+   Mobile Fixes - iOS Safari specific
+   ============================================ */
+
+@supports (padding: max(0px)) {
+  .input-container {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+/* Message Bubbles - Light Theme */
+.vera-message {
+  background: rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(155, 137, 212, 0.3) !important;
+}
+
+.user-message {
+  background: linear-gradient(135deg, rgba(200, 180, 230, 1) 0%, rgba(180, 200, 240, 1) 100%) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(155, 137, 212, 0.4) !important;
+}
+
+/* Message Bubbles - Dark Theme */
+[data-theme="dark"] .vera-message {
+  background: rgba(30, 30, 50, 1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(155, 137, 212, 0.5) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="dark"] .user-message {
+  background: linear-gradient(135deg, rgba(100, 80, 140, 1) 0%, rgba(80, 120, 180, 1) 100%) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(155, 137, 212, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Message Bubbles - Deep Dark Theme */
+[data-theme="deep"] .vera-message {
+  background: rgba(20, 20, 20, 1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(155, 137, 212, 0.4) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="deep"] .user-message {
+  background: linear-gradient(135deg, rgba(80, 60, 100, 1) 0%, rgba(60, 80, 120, 1) 100%) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(155, 137, 212, 0.5) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* NUCLEAR OPTION - Maximum specificity for solid backgrounds */
+.vera-message-solid,
+.vera-message-solid[style] {
+  opacity: 1 !important;
+}
+
+[data-theme="light"] .vera-message-solid {
+  background: rgb(255, 255, 255) !important;
+  background-color: rgb(255, 255, 255) !important;
+}
+
+[data-theme="dark"] .vera-message-solid {
+  background: rgb(30, 30, 50) !important;
+  background-color: rgb(30, 30, 50) !important;
+}
+
+[data-theme="deep"] .vera-message-solid {
+  background: rgb(20, 20, 20) !important;
+  background-color: rgb(20, 20, 20) !important;
+}
+
+.user-message-solid {
+  opacity: 1 !important;
+}
+
+[data-theme="light"] .user-message-solid {
+  background: linear-gradient(135deg, rgb(200, 180, 230) 0%, rgb(180, 200, 240) 100%) !important;
+}
+
+[data-theme="dark"] .user-message-solid {
+  background: linear-gradient(135deg, rgb(100, 80, 140) 0%, rgb(80, 120, 180) 100%) !important;
+}
+
+[data-theme="deep"] .user-message-solid {
+  background: linear-gradient(135deg, rgb(80, 60, 100) 0%, rgb(60, 80, 120) 100%) !important;
+}
+
+/* Slow pulse animation for signup button */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.01);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.shimmer:hover::before {
+  left: 100%;
 }
