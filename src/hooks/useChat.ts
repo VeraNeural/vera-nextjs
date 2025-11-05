@@ -274,6 +274,12 @@ export function useChat(): UseChatReturn {
         body: JSON.stringify({ is_saved: next }),
       });
       if (!res.ok) {
+        if (res.status === 403) {
+          try { alert('Your trial has ended. Please upgrade to continue.'); } catch {}
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('vera:subscription_required'));
+          }
+        }
         console.error('Failed to toggle save:', await res.text());
         return;
       }

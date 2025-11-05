@@ -1,14 +1,22 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-// Enforce a single canonical domain in production
-const CANONICAL_HOST = 'veraneural.com';
+// Canonical domain enforcement (configurable via env)
+// Set APP_CANONICAL_HOST to your desired host (e.g., 'app.veraneural.com' or 'veraneural.com')
+// Set APP_ENFORCE_CANONICAL to 'true' to enable redirects in production
+const CANONICAL_HOST = (process.env.APP_CANONICAL_HOST || '').toLowerCase();
+const ENFORCE = process.env.APP_ENFORCE_CANONICAL === 'true';
 
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
 
-  // Skip in development and when already on canonical host
-  if (process.env.NODE_ENV !== 'production' || host === CANONICAL_HOST) {
+  // Skip when not enforcing, in development, or no canonical set
+  if (!ENFORCE || process.env.NODE_ENV !== 'production' || !CANONICAL_HOST) {
+    return NextResponse.next();
+  }
+
+  // Already on canonical host
+  if (host.toLowerCase() === CANONICAL_HOST) {
     return NextResponse.next();
   }
 
@@ -22,6 +30,6 @@ export function middleware(request: NextRequest) {
 // Don't run for static assets; allow webhook to receive raw host unchanged
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/billing/webhook).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/billing/webhook|api/stripe/webhook).*)',
   ],
 };

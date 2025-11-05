@@ -1,4 +1,5 @@
 import MagicLinkForm from '@/components/auth/MagicLinkForm';
+import SocialLogin from '@/components/auth/SocialLogin';
 import BreathingOrb from '@/components/orb/BreathingOrb';
 
 export default function LoginPage() {
@@ -19,7 +20,10 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Magic Link Form */}
+  {/* Social Login */}
+  <SocialLogin />
+
+  {/* Magic Link Form */}
       <MagicLinkForm />
 
       {/* Footer */}

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { getAccessStatus } from '@/lib/access';
 
 // GET: Fetch all threads for the authenticated user
 export async function GET(request: NextRequest) {
@@ -16,6 +17,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
+      );
+    }
+
+    // Enforce subscription/trial access
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to access your threads.',
+          trialEnded: true,
+        },
+        { status: 403 }
       );
     }
 
@@ -60,7 +74,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, preview } = await request.json();
+  const { title, preview } = await request.json();
     console.log('📝 Creating thread:', { title, preview });
 
     if (!title) {
@@ -99,6 +113,19 @@ export async function POST(request: NextRequest) {
         );
       }
       console.log('✅ User entry created');
+    }
+
+    // Enforce subscription/trial access (after ensuring user row exists)
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to create new conversations.',
+          trialEnded: true,
+        },
+        { status: 403 }
+      );
     }
 
     const { data: thread, error } = await supabase

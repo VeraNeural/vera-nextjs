@@ -137,6 +137,12 @@ export default function InputContainer({
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          try { alert('Your trial has ended. Please upgrade to use speech.'); } catch {}
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('vera:subscription_required'));
+          }
+        }
         throw new Error('Failed to generate speech');
       }
 
@@ -165,29 +171,32 @@ export default function InputContainer({
   };
 
   const handleSend = async () => {
-    if (message.trim() && !disabled) {
-      const finalMessage = message.trim();
-      
-      // If there's an attached file, convert to base64 and send
-      if (attachedFile && imagePreview) {
-        const base64 = imagePreview.split(',')[1]; // Remove data:image/...;base64, prefix
-        const imageData = {
-          base64,
-          mimeType: attachedFile.type,
-          name: attachedFile.name
-        };
-        
-        onSend(finalMessage, imageData);
-        setAttachedFile(null);
-        setImagePreview(null);
-      } else {
-        onSend(finalMessage);
-      }
-      
+    if (disabled) return;
+
+    const finalMessage = message.trim();
+
+    // Support sending image-only (no text)
+    if (attachedFile && imagePreview) {
+      const base64 = imagePreview.split(',')[1]; // Remove data:image/...;base64, prefix
+      const imageData = {
+        base64,
+        mimeType: attachedFile.type,
+        name: attachedFile.name
+      };
+
+      onSend(finalMessage, imageData);
+      setAttachedFile(null);
+      setImagePreview(null);
       setMessage('');
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
+      return;
+    }
+
+    // Text-only send
+    if (finalMessage) {
+      onSend(finalMessage);
+      setMessage('');
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
     }
   };
 
@@ -574,29 +583,33 @@ export default function InputContainer({
           }}
           title="Send message"
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
-            <path
-              d="M18 2L9 11M18 2l-6 16-3-7-7-3 16-6z"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {(disabled && message.trim()) ? (
+            <span
+              aria-hidden
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                border: '2px solid var(--border-color)',
+                borderTopColor: 'var(--orb-1)',
+                display: 'inline-block',
+                animation: 'spin 0.9s linear infinite',
+              }}
             />
-          </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+              <path
+                d="M18 2L9 11M18 2l-6 16-3-7-7-3 16-6z"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
         </button>
       </div>
 
-      {/* Disclaimer */}
-      <p
-        style={{
-          marginTop: '8px',
-          fontSize: '10px',
-          color: 'var(--text-tertiary)',
-          textAlign: 'center',
-          opacity: 0.6,
-        }}
-      >
-        VERA is not a medical device and does not replace therapy. She complements your care.
-      </p>
+      {/* Disclaimer removed to avoid mobile layout shift */}
 
       {/* Animations */}
       <style jsx>{`

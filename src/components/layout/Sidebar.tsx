@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import BreathingOrb from '@/components/orb/BreathingOrb';
 import Button from '@/components/ui/Button';
+import { useTrial as useSubscriptionTrial } from '@/hooks/useTrial';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Thread {
@@ -26,6 +28,7 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { trial } = useSubscriptionTrial();
 
   // Ensure client-side only rendering for timestamps
   useEffect(() => {
@@ -200,7 +203,7 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
           w-[280px]
           flex flex-col
           transition-transform duration-300 ease-in-out
-          overflow-hidden
+          overflow-y-auto
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         style={{
@@ -254,9 +257,8 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
         </div>
 
         {/* 3. Thread Categories */}
-        <div className="overflow-y-auto px-4 space-y-6" style={{ 
+        <div className="px-4 space-y-6" style={{ 
           backgroundColor: 'transparent',
-          maxHeight: 'calc(100vh - 500px)',
           minHeight: '200px'
         }}>
           {/* Today Section */}
@@ -465,6 +467,114 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
           </div>
         </div>
 
+        {/* 4.5 Subscription Section */}
+        <div className="px-4 py-3 border-t" style={{ 
+          backgroundColor: 'transparent',
+          borderTopColor: 'var(--border-color)'
+        }}>
+          <h3 className="text-xs font-semibold uppercase tracking-wider mb-3"
+              style={{ color: 'var(--sidebar-text-soft)' }}>
+            Subscription
+          </h3>
+          {trial?.hasSubscription ? (
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/stripe/portal', { method: 'POST' });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data?.error || 'Failed to open billing portal');
+                  if (data.url) window.location.href = data.url;
+                } catch (e) {
+                  console.error('Portal error:', e);
+                  alert('Unable to open billing portal. Please try again.');
+                }
+              }}
+              className="w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200"
+              style={{
+                backgroundColor: 'rgba(168, 184, 232, 0.1)',
+                color: 'var(--sidebar-text-primary)',
+                border: '1px solid rgba(168, 184, 232, 0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(168, 184, 232, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(168, 184, 232, 0.1)';
+              }}
+            >
+              Manage Billing
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/billing/checkout', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ plan: 'monthly' }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data?.error || 'Failed to start checkout');
+                    if (data.url) window.location.href = data.url;
+                  } catch (e) {
+                    console.error('Checkout error:', e);
+                    alert('Unable to start checkout. Please try again.');
+                  }
+                }}
+                className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(79, 70, 229, 0.25))',
+                  color: 'white',
+                  border: '1px solid rgba(139, 92, 246, 0.4)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.filter = 'brightness(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = 'none';
+                }}
+              >
+                Upgrade
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/billing/checkout', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ plan: 'annual' }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data?.error || 'Failed to start checkout');
+                    if (data.url) window.location.href = data.url;
+                  } catch (e) {
+                    console.error('Checkout error:', e);
+                    alert('Unable to start checkout. Please try again.');
+                  }
+                }}
+                className="px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  color: 'var(--sidebar-text-secondary)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
+                }}
+                title="Annual plan"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.color = 'var(--sidebar-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                  e.currentTarget.style.color = 'var(--sidebar-text-secondary)';
+                }}
+              >
+                Yearly
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* 5. User Profile Section */}
         <div className="p-4 pb-8 border-t" style={{ 
           backgroundColor: 'transparent',
@@ -501,6 +611,26 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
             </svg>
             <span className="font-medium">Manage Profile</span>
           </button>
+        </div>
+
+        {/* 6. Legal Links */}
+        <div className="px-4 pb-6 border-t" style={{ 
+          backgroundColor: 'transparent',
+          borderTopColor: 'rgba(255, 255, 255, 0.08)'
+        }}>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]" style={{ color: 'var(--sidebar-text-soft)' }}>
+            <Link href="/legal/disclaimer" className="hover:underline hover:text-[var(--sidebar-text-primary)] transition-colors">
+              Disclaimer
+            </Link>
+            <span>•</span>
+            <Link href="/legal/privacy" className="hover:underline hover:text-[var(--sidebar-text-primary)] transition-colors">
+              Privacy
+            </Link>
+            <span>•</span>
+            <Link href="/legal/terms" className="hover:underline hover:text-[var(--sidebar-text-primary)] transition-colors">
+              Terms
+            </Link>
+          </div>
         </div>
       </aside>
     </>

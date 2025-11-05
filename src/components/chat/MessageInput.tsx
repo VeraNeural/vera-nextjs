@@ -95,12 +95,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
           </button>
         </div>
 
-        {/* Disclaimer */}
-        <div className="mt-3 text-center">
-          <p className="text-xs text-text-tertiary">
-            VERA is not a medical device and does not replace therapy. She complements your care.
-          </p>
-        </div>
+        {/* Disclaimer removed to keep input compact on mobile */}
       </div>
     </div>
   );

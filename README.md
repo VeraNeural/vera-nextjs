@@ -82,36 +82,24 @@ npm install
 Create a `.env.local` file in the root directory:
 
 ```bash
-# Copy from .env.local.example
-cp .env.local.example .env.local
+cp .env.example .env.local
 ```
 
-Edit `.env.local` with your actual credentials:
+Edit `.env.local` with your actual credentials (never commit real keys): see `.env.example` for required variables.
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+Security note: If any secret was ever committed, rotate it immediately (Supabase keys, Stripe keys, AI keys, Resend, ElevenLabs, etc.).
 
-# App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+### 5.1 Google OAuth (Supabase)
 
-# Resend
-RESEND_API_KEY=re_xxx
+Google credentials are configured in Supabase, not in app envs:
 
-# Stripe
-STRIPE_SECRET_KEY=sk_test_xxx
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
+- Supabase Dashboard → Authentication → Providers → Google → Enable
+- In Google Cloud Console, create OAuth client (Web):
+   - Authorized redirect URIs: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
+   - Authorized JavaScript origins: your domains (localhost:3000, your Vercel domain, your custom domain)
+- Paste the Google Client ID/Secret into Supabase and Save
 
-# Stripe Price IDs
-NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID=price_xxx
-NEXT_PUBLIC_STRIPE_ANNUAL_PRICE_ID=price_xxx
-
-# OpenAI (or your LLM provider)
-OPENAI_API_KEY=sk-xxx
-```
+Your app already redirects to `/api/auth/callback` after Supabase completes OAuth.
 
 ### 6. Run the Development Server
 
@@ -220,6 +208,7 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 Update these after deployment:
 - `NEXT_PUBLIC_APP_URL` → Your production URL
+- `APP_CANONICAL_HOST` and `APP_ENFORCE_CANONICAL` → For optional canonical redirects
 - Stripe webhook endpoint → Your production webhook URL
 - Supabase redirect URLs → Add production domain
 

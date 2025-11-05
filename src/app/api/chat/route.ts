@@ -80,12 +80,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!message) {
-      return NextResponse.json(
-        { error: 'Message is required' },
-        { status: 400 }
-      );
-    }
+    // Allow image-only messages (no text)
+    const hasText = typeof message === 'string' && message.trim().length > 0;
 
     // Get conversation history (skip in dev mode if no user)
     let conversationHistory: any[] = [];
@@ -143,23 +139,32 @@ export async function POST(request: NextRequest) {
     // Regular VERA flow (Claude) continues below...
 
     // Detect mode: Real Talk vs Therapeutic
-    const modeSwitch = detectModeSwitch(message);
-    const autoDetectedMode = detectMode(message);
+  const userText = hasText ? message : '';
+  const modeSwitch = detectModeSwitch(userText);
+  const autoDetectedMode = detectMode(userText);
     const conversationMode = modeSwitch || autoDetectedMode;
 
     // Analyze user's state (for therapeutic mode)
-    const adaptiveCodes = detectAdaptiveCodes(message);
-    const quantumState = analyzeQuantumState(message, biometricData);
+  const adaptiveCodes = detectAdaptiveCodes(userText);
+  const quantumState = analyzeQuantumState(userText, biometricData);
 
     // Generate appropriate prompt based on mode
     let veraPrompt: string;
     
     if (conversationMode === 'real-talk') {
       // Real Talk mode - casual, direct, practical
-      veraPrompt = generateRealTalkPrompt(message, conversationHistory);
+      veraPrompt = generateRealTalkPrompt(
+        hasText ? userText : 'Please share supportive, practical observations about the attached image and invite the user to reflect on what it evokes for them.',
+        conversationHistory
+      );
     } else {
       // Therapeutic mode - nervous system co-regulation
-      veraPrompt = generateVERAPrompt(message, conversationHistory, adaptiveCodes, quantumState);
+      veraPrompt = generateVERAPrompt(
+        hasText ? userText : 'The user shared an image without text. Offer gentle, observational reflections and curious questions that help them notice feelings, sensations, and meaning it brings up.',
+        conversationHistory,
+        adaptiveCodes,
+        quantumState
+      );
       
       // Add image viewing context if present
       if (imageData) {
@@ -248,7 +253,7 @@ export async function POST(request: NextRequest) {
         {
           user_id: user.id,
           role: 'user',
-          content: message,
+          content: hasText ? userText : '[image] ',
           created_at: new Date().toISOString(),
         },
         {
@@ -262,8 +267,8 @@ export async function POST(request: NextRequest) {
 
     // Check for crisis indicators
     const crisisKeywords = ['suicide', 'kill myself', 'end it all', 'not worth living', 'want to die'];
-    const isCrisis = crisisKeywords.some((keyword) =>
-      message.toLowerCase().includes(keyword)
+    const isCrisis = hasText && crisisKeywords.some((keyword) =>
+      userText.toLowerCase().includes(keyword)
     );
 
     if (isCrisis && user) {

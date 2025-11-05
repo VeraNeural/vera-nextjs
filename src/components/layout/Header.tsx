@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import BreathingOrb from '../orb/BreathingOrb';
 import { useAuth } from '@/hooks/useAuth';
+import { AMBIENT_SOUNDS } from '@/lib/sounds/ambient-sounds';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -21,25 +22,6 @@ const STATUS_MESSAGES = [
   'Creating space for healing...',
 ];
 
-// Ambient sound collection
-const AMBIENT_SOUNDS = [
-  {
-    name: 'Gentle Rain',
-    url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3'
-  },
-  {
-    name: 'Ocean Waves',
-    url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c610232532.mp3'
-  },
-  {
-    name: 'Forest Birds',
-    url: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_4829c6e4b0.mp3'
-  },
-  {
-    name: 'Peaceful Stream',
-    url: 'https://cdn.pixabay.com/download/audio/2022/06/07/audio_d2c66cf4c0.mp3'
-  }
-];
 
 export default function Header({ onMenuToggle, showMenuButton = true, onNewChat }: HeaderProps) {
   const [statusIndex, setStatusIndex] = useState(0);
@@ -81,7 +63,7 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
     };
   }, [canPlayAudio]);
 
-  // Manage ambient sound playback
+  // Manage ambient sound playback (supports cycling between tracks)
   useEffect(() => {
     // Only start audio after a user gesture
     if (!soundEnabled) {
@@ -100,44 +82,61 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
     }
 
     if (soundEnabled && canPlayAudio) {
+      const selected = AMBIENT_SOUNDS[currentSoundIndex % AMBIENT_SOUNDS.length];
+
       // Stop any existing audio first
       if (audioContext) {
-        audioContext.pause();
-        audioContext.src = '';
+        try {
+          // quick fade out
+          const step = 0.05;
+          const fade = setInterval(() => {
+            if (!audioContext) return clearInterval(fade);
+            audioContext.volume = Math.max(0, audioContext.volume - step);
+            if (audioContext.volume <= 0.05) {
+              clearInterval(fade);
+              audioContext.pause();
+              audioContext.src = '';
+            }
+          }, 30);
+        } catch {}
       }
 
-      // Create new audio element - using reliable ambient music
+      // Create new audio element
       const audio = new Audio();
-      // Using local ambient sounds (user will add from Freesound)
-      // Fallback to a sample URL if local file doesn't exist
-      audio.src = '/sounds/rain.mp3'; // Will use user's downloaded sounds
+      audio.src = selected.file; // Local file path from public/sounds
       audio.onerror = () => {
-        console.log('Local sound not found. Please add audio files to public/sounds/');
+        console.log(`Sound not found: ${selected.file}. Add audio files to public/sounds/`);
       };
       audio.loop = true;
-      audio.volume = 0.25; // Nice subtle level
+      audio.volume = 0.0; // start silent then fade-in
       audio.crossOrigin = 'anonymous';
-      
-      // Play the audio
+
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            console.log('Playing: Calming ambient music');
+            // fade in smoothly
+            const target = 0.25;
+            const step = 0.025;
+            const fadeIn = setInterval(() => {
+              audio.volume = Math.min(target, audio.volume + step);
+              if (audio.volume >= target) clearInterval(fadeIn);
+            }, 50);
+            console.log(`Playing ambient: ${selected.name}`);
           })
           .catch((err) => {
             console.log('Audio play error:', err);
           });
       }
-      
+
       setAudioContext(audio);
-      
+
       return () => {
         audio.pause();
         audio.src = '';
       };
     }
-  }, [soundEnabled, canPlayAudio]);
+  }, [soundEnabled, canPlayAudio, currentSoundIndex]);
 
   const toggleSound = () => {
     const newState = !soundEnabled;
@@ -378,7 +377,7 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
             </button>
           )}
 
-          {/* Ambient Sounds Toggle */}
+          {/* Ambient Sounds Toggle (right-click to cycle) */}
           <button
             onClick={toggleSound}
             onContextMenu={(e) => {
@@ -405,7 +404,7 @@ export default function Header({ onMenuToggle, showMenuButton = true, onNewChat 
             }}
             aria-label={soundEnabled ? 'Ambient sounds on' : 'Ambient sounds off'}
             title={soundEnabled 
-              ? `🎵 ${AMBIENT_SOUNDS[currentSoundIndex].name}\n(Auto-rotating • Right-click to skip)` 
+              ? `🎵 ${AMBIENT_SOUNDS[currentSoundIndex].name}\n(Right-click to change sound)` 
               : '🌿 Enable ambient sounds'}
             onMouseEnter={(e) => {
               if (!soundEnabled) {

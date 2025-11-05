@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 
 interface TrialCornerIndicatorProps {
-  messagesUsed: number;
-  totalMessages: number;
+  messagesUsed?: number;
+  totalMessages?: number;
   hoursRemaining: number;
   onUpgrade: () => void;
 }
@@ -18,7 +18,8 @@ export default function TrialCornerIndicator({
   const [timeString, setTimeString] = useState('');
   const [expanded, setExpanded] = useState(false);
   
-  const progressPercent = (messagesUsed / totalMessages) * 100;
+  const hasMessageLimits = typeof messagesUsed === 'number' && typeof totalMessages === 'number' && totalMessages > 0;
+  const progressPercent = hasMessageLimits ? (messagesUsed! / totalMessages!) * 100 : 0;
   const isCritical = hoursRemaining <= 12;
 
   useEffect(() => {
@@ -117,38 +118,41 @@ export default function TrialCornerIndicator({
                 {timeString}
               </span>
             </div>
-            
-            <p
-              style={{
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '11px',
-                marginBottom: '8px',
-              }}
-            >
-              {messagesUsed} of {totalMessages} messages
-            </p>
+            {hasMessageLimits && (
+              <>
+                <p
+                  style={{
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '11px',
+                    marginBottom: '8px',
+                  }}
+                >
+                  {messagesUsed} of {totalMessages} messages
+                </p>
 
-            {/* Progress Bar */}
-            <div
-              style={{
-                width: '100%',
-                height: '4px',
-                background: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                marginBottom: '10px',
-              }}
-            >
-              <div
-                style={{
-                  height: '100%',
-                  background: '#fff',
-                  borderRadius: '8px',
-                  width: `${progressPercent}%`,
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            </div>
+                {/* Progress Bar */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: '4px',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    marginBottom: '10px',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      background: '#fff',
+                      borderRadius: '8px',
+                      width: `${progressPercent}%`,
+                      transition: 'width 0.3s ease',
+                    }}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Upgrade Button */}
             <button

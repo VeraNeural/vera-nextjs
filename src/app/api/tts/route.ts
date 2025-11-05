@@ -1,5 +1,7 @@
 // src/app/api/tts/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { getAccessStatus } from '@/lib/access';
 
 // Strip markdown formatting for cleaner TTS
 function stripMarkdown(text: string): string {
@@ -25,6 +27,30 @@ function stripMarkdown(text: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require auth
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // Enforce subscription/trial access
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to use text-to-speech.',
+          trialEnded: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const { text } = await request.json();
 
     if (!text) {

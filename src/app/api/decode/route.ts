@@ -4,6 +4,8 @@ import OpenAI from 'openai';
 import { detectAdaptiveCodes } from '@/lib/vera/adaptive-codes';
 import { analyzeQuantumState } from '@/lib/vera/quantum-states';
 import { generateDecodePrompt } from '@/lib/vera/decode-mode';
+import { createClient } from '@/lib/supabase/server';
+import { getAccessStatus } from '@/lib/access';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,6 +13,30 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    // Require auth
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // Enforce subscription/trial access
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to use decode mode.',
+          trialEnded: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const { message, conversationHistory } = await request.json();
 
     if (!message) {

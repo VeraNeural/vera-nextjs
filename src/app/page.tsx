@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
-import TrialCornerIndicator from '@/components/trial/TrialCornerIndicator';
-import TrialExpiredModal from '@/components/trial/TrialExpiredModal';
 import ChatContainer from '@/components/chat/ChatContainer';
 import WelcomeStateExact from '@/components/chat/WelcomeStateExact';
 import InputContainer from '@/components/chat/InputContainer';
@@ -14,15 +12,16 @@ import { useChat } from '@/hooks/useChat';
 import { useTrial } from '@/hooks/useTrial';
 import { useAuth } from '@/hooks/useAuth';
 import PlanPicker from '@/components/billing/PlanPicker';
-import UpgradeButton from '@/components/billing/UpgradeButton';
+import TrialCornerIndicator from '@/components/trial/TrialCornerIndicator';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Closed by default
+  const [mounted, setMounted] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   
-  const { messages, loading, sendMessage, clearMessages, threadId, trialExpired, toggleSave } = useChat();
+  const { messages, loading, sendMessage, clearMessages, toggleSave, trialExpired } = useChat();
   const { trial, loading: trialLoading } = useTrial();
 
   // Redirect to signup if not authenticated
@@ -31,6 +30,15 @@ export default function Home() {
       router.push('/auth/signup');
     }
   }, [authLoading, user, router]);
+
+  // Defer rendering until after hydration to avoid production hydration/runtime hook errors
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   // Show loading while checking auth
   if (authLoading) {
@@ -53,6 +61,29 @@ export default function Home() {
   if (!user) {
     return null;
   }
+
+  // Auto-open PlanPicker on trial expiration
+  useEffect(() => {
+    if (trialExpired) {
+      try {
+        alert('Your trial has ended. Please choose a plan to continue using VERA.');
+      } catch {}
+      setShowPlan(true);
+    }
+  }, [trialExpired]);
+
+  // Listen for global subscription-required events from other parts of the UI
+  useEffect(() => {
+    const handler = () => setShowPlan(true);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('vera:subscription_required', handler);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('vera:subscription_required', handler);
+      }
+    };
+  }, []);
 
   const handleSend = async (content: string, imageData?: { base64: string; mimeType: string; name: string }) => {
     await sendMessage(content, imageData);
@@ -98,31 +129,27 @@ export default function Home() {
     }
   };
 
-  // Calculate trial stats from API
-  const totalMessages = 50;
-  const messagesUsed = 0; // TODO: Get from trial state
-  const hoursRemaining = trial?.hoursRemaining ?? 48; // Get from trial API
+  const handleManageBilling = async () => {
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to open billing portal');
+      if (data.url) window.location.href = data.url;
+    } catch (e) {
+      console.error('Portal error:', e);
+      alert('Unable to open billing portal. Please try again.');
+    }
+  };
 
   return (
     <MainLayout showSidebar={true}>
-      {/* Subtle upgrade button (hidden if subscribed) */}
-      {!trial?.hasSubscription && (
-        <UpgradeButton onClick={() => setShowPlan(true)} />
+      {/* Always-on, subtle trial indicator (non-invasive) */}
+      {trial && trial.active && !trial.hasSubscription && (
+        <TrialCornerIndicator
+          hoursRemaining={trial.hoursRemaining}
+          onUpgrade={() => setShowPlan(true)}
+        />
       )}
-
-      {/* Trial Expired Modal */}
-      <TrialExpiredModal 
-        isOpen={trialExpired}
-        onClose={() => {}} 
-      />
-
-      {/* Trial Corner Indicator */}
-      <TrialCornerIndicator
-        messagesUsed={messagesUsed}
-        totalMessages={totalMessages}
-        hoursRemaining={hoursRemaining}
-        onUpgrade={() => setShowPlan(true)}
-      />
 
       {/* Sidebar - Overlay on mobile, hidden on desktop */}
       <Sidebar

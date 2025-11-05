@@ -1,6 +1,7 @@
 // src/app/api/messages/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getAccessStatus } from '@/lib/access';
 
 // POST: Save a message to a thread
 export async function POST(request: NextRequest) {
@@ -12,6 +13,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
+      );
+    }
+
+    // Enforce subscription/trial access
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to send messages.',
+          trialEnded: true,
+        },
+        { status: 403 }
       );
     }
 
@@ -77,6 +91,19 @@ export async function GET(request: NextRequest) {
 
     if (savedOnly) {
       query = query.eq('is_saved', true);
+    }
+
+    // Enforce subscription/trial access
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to view messages.',
+          trialEnded: true,
+        },
+        { status: 403 }
+      );
     }
 
     const { data: messages, error } = await query;

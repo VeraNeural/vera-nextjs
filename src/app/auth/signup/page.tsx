@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BreathingOrb from '@/components/orb/BreathingOrb';
+import SocialLogin from '@/components/auth/SocialLogin';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -96,7 +97,10 @@ export default function SignupPage() {
           <span className="text-sm text-white font-semibold tracking-wide">48-Hour Free Trial</span>
         </div>
 
-        {/* Signup form */}
+  {/* Social Login */}
+  <SocialLogin />
+
+  {/* Signup form */}
         <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 px-4">
           {!success ? (
             <>
@@ -157,7 +161,7 @@ export default function SignupPage() {
         {/* Login link */}
         <button
           type="button"
-          onClick={() => router.push('/auth/login')}
+          onClick={() => router.push('/login')}
           className="text-base text-white/70 hover:text-white transition-colors underline decoration-white/30 hover:decoration-white"
         >
           Already have an account? Log in

@@ -1,6 +1,7 @@
 // src/app/api/threads/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getAccessStatus } from '@/lib/access';
 
 interface RouteParams {
   params: Promise<{
@@ -19,6 +20,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
+      );
+    }
+
+    // Enforce subscription/trial access
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to view conversations.',
+          trialEnded: true,
+        },
+        { status: 403 }
       );
     }
 
@@ -76,6 +90,19 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Enforce subscription/trial access
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to manage conversations.',
+          trialEnded: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const { error } = await supabase
       .from('threads')
       .delete()
@@ -115,6 +142,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const { title, preview } = await request.json();
+
+    // Enforce subscription/trial access
+    const access = await getAccessStatus(supabase as any, user.id);
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'subscription_required',
+          message: 'Your trial has ended. Please subscribe to update conversations.',
+          trialEnded: true,
+        },
+        { status: 403 }
+      );
+    }
 
     const updates: any = {};
     if (title) updates.title = title;
