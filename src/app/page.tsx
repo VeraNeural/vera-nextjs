@@ -1,6 +1,7 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
@@ -11,12 +12,44 @@ import WelcomeStateExact from '@/components/chat/WelcomeStateExact';
 import InputContainer from '@/components/chat/InputContainer';
 import { useChat } from '@/hooks/useChat';
 import { useTrial } from '@/hooks/useTrial';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Closed by default
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   
   const { messages, loading, sendMessage, clearMessages, threadId, trialExpired } = useChat();
   const { trial, loading: trialLoading } = useTrial();
+
+  // Redirect to signup if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/signup');
+    }
+  }, [authLoading, user, router]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: 'var(--background)',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-soft)' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!user) {
+    return null;
+  }
 
   const handleSend = async (content: string, imageData?: { base64: string; mimeType: string; name: string }) => {
     await sendMessage(content, imageData);
