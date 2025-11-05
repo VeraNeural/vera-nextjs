@@ -42,7 +42,7 @@ export function TrialProvider({ children }: { children: ReactNode }) {
       const initialState = {
         messagesRemaining: TRIAL_MESSAGES,
         totalMessages: TRIAL_MESSAGES,
-        trialEndDate: new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000),
+        trialEndDate: new Date(Date.now() + TRIAL_HOURS * 60 * 60 * 1000),
         isTrialActive: true,
       };
       setTrialState(initialState);
