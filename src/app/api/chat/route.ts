@@ -189,7 +189,8 @@ export async function POST(request: NextRequest) {
 
     // Generate VERA's response using Claude with vision support
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      // Use a stable, supported model name
+      model: 'claude-3-5-sonnet-20240620',
       max_tokens: 1024,
       messages: [
         {
