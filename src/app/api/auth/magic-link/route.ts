@@ -1,6 +1,7 @@
 // src/app/api/auth/magic-link/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -34,8 +35,9 @@ export async function POST(request: NextRequest) {
       // Continue anyway to send our custom email
     }
 
-    // Generate a magic link manually using Supabase's generateLink
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+    // Generate a magic link manually using Supabase's admin API (requires service role)
+    const supabaseAdmin = createServiceClient();
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email,
       options: {
