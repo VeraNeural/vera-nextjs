@@ -13,9 +13,12 @@ import InputContainer from '@/components/chat/InputContainer';
 import { useChat } from '@/hooks/useChat';
 import { useTrial } from '@/hooks/useTrial';
 import { useAuth } from '@/hooks/useAuth';
+import PlanPicker from '@/components/billing/PlanPicker';
+import UpgradeButton from '@/components/billing/UpgradeButton';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Closed by default
+  const [showPlan, setShowPlan] = useState(false);
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   
@@ -79,6 +82,22 @@ export default function Home() {
     }
   };
 
+  const startCheckout = async (plan: 'monthly' | 'annual' = 'monthly') => {
+    try {
+      const res = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to start checkout');
+      if (data.url) window.location.href = data.url;
+    } catch (e) {
+      console.error('Checkout error:', e);
+      alert('Unable to start checkout. Please try again.');
+    }
+  };
+
   // Calculate trial stats from API
   const totalMessages = 50;
   const messagesUsed = 0; // TODO: Get from trial state
@@ -86,6 +105,11 @@ export default function Home() {
 
   return (
     <MainLayout showSidebar={true}>
+      {/* Subtle upgrade button (hidden if subscribed) */}
+      {!trial?.hasSubscription && (
+        <UpgradeButton onClick={() => setShowPlan(true)} />
+      )}
+
       {/* Trial Expired Modal */}
       <TrialExpiredModal 
         isOpen={trialExpired}
@@ -97,7 +121,7 @@ export default function Home() {
         messagesUsed={messagesUsed}
         totalMessages={totalMessages}
         hoursRemaining={hoursRemaining}
-        onUpgrade={() => console.log('Upgrade')}
+        onUpgrade={() => setShowPlan(true)}
       />
 
       {/* Sidebar - Overlay on mobile, hidden on desktop */}
@@ -124,7 +148,7 @@ export default function Home() {
           showMenuButton={true}
         />
 
-        {/* Chat Messages - Scrollable */}
+  {/* Chat Messages - Scrollable */}
         {messages.length === 0 ? (
           <WelcomeStateExact
             onQuickAction={(action) => {
@@ -175,6 +199,13 @@ export default function Home() {
             : undefined}
         />
       </div>
+
+      {/* Plan Picker Modal */}
+      <PlanPicker
+        isOpen={showPlan}
+        onClose={() => setShowPlan(false)}
+        onSelect={(plan) => startCheckout(plan)}
+      />
     </MainLayout>
   );
 }
