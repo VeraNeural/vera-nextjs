@@ -50,9 +50,10 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 relative overflow-hidden" style={{
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12 relative overflow-y-auto" style={{
       background: 'linear-gradient(180deg, #0a0a1e 0%, #1a1a3e 50%, #1a1535 100%)',
-      paddingTop: '80px',
+      paddingTop: 'max(60px, 5vh)',
+      paddingBottom: 'max(40px, 3vh)',
     }}>
       {/* Starfield background effect */}
       <div className="absolute inset-0 opacity-20">
@@ -64,39 +65,39 @@ export default function SignupPage() {
       </div>
 
       {/* Main content */}
-      <div className="max-w-lg w-full flex flex-col items-center gap-6 relative z-10">
+      <div className="max-w-lg w-full flex flex-col items-center gap-4 sm:gap-6 relative z-10">
         {/* Large breathing orb */}
-        <div className="relative mb-4">
-          <BreathingOrb size={260} animate={true} showShimmer={true} />
+        <div className="relative mb-2 sm:mb-4">
+          <BreathingOrb size={200} animate={true} showShimmer={true} />
         </div>
 
         {/* VERA title */}
-        <div className="text-center space-y-2 mb-2">
-          <h1 className="text-7xl font-light tracking-[0.4em] text-white drop-shadow-2xl">
+        <div className="text-center space-y-1 sm:space-y-2 mb-1 sm:mb-2">
+          <h1 className="text-5xl sm:text-7xl font-light tracking-[0.4em] text-white drop-shadow-2xl">
             V E R A
           </h1>
-          <p className="text-xl text-white/90 font-light tracking-wide">
+          <p className="text-lg sm:text-xl text-white/90 font-light tracking-wide">
             Your AI Co-Regulator
           </p>
         </div>
 
         {/* Description */}
-        <div className="text-center max-w-md space-y-1 px-4 mb-4">
-          <p className="text-lg text-white/95 leading-relaxed">
+        <div className="text-center max-w-md space-y-1 px-4 mb-2 sm:mb-4">
+          <p className="text-base sm:text-lg text-white/95 leading-relaxed">
             I help you listen to what your body already knows.
           </p>
-          <p className="text-base text-white/85 leading-relaxed">
+          <p className="text-sm sm:text-base text-white/85 leading-relaxed">
             Not an AI pretending to be human, but a revolutionary intelligence built for your nervous system.
           </p>
         </div>
 
         {/* Trial badge */}
-        <div className="px-6 py-2.5 rounded-full border-2 border-white/30 bg-white/10 backdrop-blur-md mb-6">
-          <span className="text-base text-white font-semibold tracking-wide">48-Hour Free Trial</span>
+        <div className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-full border-2 border-white/30 bg-white/10 backdrop-blur-md mb-4 sm:mb-6">
+          <span className="text-sm sm:text-base text-white font-semibold tracking-wide">48-Hour Free Trial</span>
         </div>
 
         {/* Signup form */}
-        <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6 px-4">
+        <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 sm:space-y-6 px-4">
           {!success ? (
             <>
               <div className="relative">
@@ -105,7 +106,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your.email@example.com"
-                  className="w-full px-8 py-5 rounded-2xl bg-white/95 backdrop-blur-sm text-gray-900 placeholder:text-gray-400 text-center text-lg font-medium focus:outline-none focus:ring-4 focus:ring-orb-purple/40 shadow-2xl transition-all"
+                  className="w-full px-6 py-4 sm:px-8 sm:py-5 rounded-2xl bg-white/95 backdrop-blur-sm text-gray-900 placeholder:text-gray-400 text-center text-base sm:text-lg font-medium focus:outline-none focus:ring-4 focus:ring-orb-purple/40 shadow-2xl transition-all"
                   required
                 />
               </div>
@@ -119,15 +120,15 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-8 py-6 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white text-xl font-bold tracking-wide hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
+                className="w-full px-6 py-4 sm:px-8 sm:py-6 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white text-lg sm:text-xl font-bold tracking-wide hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
               >
-                <span className="flex items-center justify-center gap-3">
-                  <span className="text-2xl">{loading ? '✨' : '✨'}</span>
+                <span className="flex items-center justify-center gap-2 sm:gap-3">
+                  <span className="text-xl sm:text-2xl">{loading ? '✨' : '✨'}</span>
                   <span>{loading ? 'Sending Magic Link...' : 'Begin Your Journey'}</span>
                 </span>
               </button>
 
-              <p className="text-sm text-white/70 text-center leading-relaxed px-4">
+              <p className="text-xs sm:text-sm text-white/70 text-center leading-relaxed px-4">
                 We'll send you a secure magic link — no password needed
               </p>
             </>
