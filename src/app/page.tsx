@@ -159,14 +159,20 @@ export default function Home() {
           />
         ) : (
           <ChatContainer
-            messages={messages.map(msg => ({
-              id: msg.id,
-              role: msg.role,
-              content: msg.content,
-              timestamp: new Date(msg.createdAt),
-              isSaved: false,
-              imageData: msg.imageData,
-            }))}
+            messages={messages.map(msg => {
+              // Support both client shape (createdAt) and DB shape (created_at)
+              const rawTs = (msg as any).created_at || (msg as any).createdAt;
+              const parsed = rawTs ? new Date(rawTs) : new Date();
+              const timestamp = isNaN(parsed.getTime()) ? new Date() : parsed;
+              return {
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                timestamp,
+                isSaved: false,
+                imageData: msg.imageData,
+              };
+            })}
             isTyping={loading}
             onSaveMessage={handleSaveMessage}
             onDeleteMessage={handleDeleteMessage}

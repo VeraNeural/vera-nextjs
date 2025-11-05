@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'missing_api_key' });
   }
   const light = new URL(request.url).searchParams.get('light') === 'true';
-  const model = 'gpt-4-turbo-preview'; // match decode route for realistic check
+  const model = 'gpt-4o-mini'; // match decode route for realistic check
   try {
     const openai = new OpenAI({ apiKey });
 

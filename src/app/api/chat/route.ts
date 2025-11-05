@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
           .map((c: any) => (c.type === 'text' ? c.text : '[Image attached]'))
           .join('\n');
         const completion = await openai.chat.completions.create({
-          model: 'gpt-4-turbo-preview',
+          model: 'gpt-4o-mini',
           max_tokens: 800,
           messages: [
             { role: 'system', content: 'You are VERA, a compassionate, trauma-informed co-regulator. Be concise, warm, and practical.' },

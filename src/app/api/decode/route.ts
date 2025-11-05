@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
       quantumState
     );
 
-    // Use OpenAI GPT-4 for deep analysis
+    // Use OpenAI for deep analysis (stable, widely available model)
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
