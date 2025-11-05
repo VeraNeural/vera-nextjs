@@ -1,18 +1,23 @@
 // src/app/api/auth/callback/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
+  const token_hash = requestUrl.searchParams.get('token_hash');
+  const type = requestUrl.searchParams.get('type');
 
-  console.log('🔐 Auth callback triggered, code:', code ? 'present' : 'missing');
+  console.log('🔐 Auth callback triggered, type:', type, 'token_hash:', token_hash ? 'present' : 'missing');
 
-  if (code) {
+  if (token_hash && type) {
     const supabase = await createClient();
     
-    // Exchange the code for a session
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    // Verify the OTP token
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash,
+      type: type as any,
+    });
     
     if (error) {
       console.error('❌ Auth callback error:', error);
@@ -22,8 +27,10 @@ export async function GET(request: NextRequest) {
     console.log('✅ Session created for user:', data?.user?.email);
 
     if (data?.user) {
-      // Check if user exists in users table, if not create entry
-      const { data: existingUser, error: checkError } = await supabase
+      // Use service client to check/create user
+      const supabaseAdmin = createServiceClient();
+      
+      const { data: existingUser, error: checkError } = await supabaseAdmin
         .from('users')
         .select('id')
         .eq('id', data.user.id)
@@ -33,7 +40,7 @@ export async function GET(request: NextRequest) {
 
       if (!existingUser) {
         console.log('➕ Creating new user entry with 48hr trial...');
-        const { data: newUser, error: insertError } = await supabase.from('users').insert({
+        const { data: newUser, error: insertError } = await supabaseAdmin.from('users').insert({
           id: data.user.id,
           email: data.user.email,
           subscription_status: 'trialing',
