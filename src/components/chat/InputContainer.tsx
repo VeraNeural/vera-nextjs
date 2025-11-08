@@ -102,27 +102,6 @@ export default function InputContainer({
     }
   }, [lastMessage, ttsEnabled]);
 
-  // Load available voices for browser TTS (on mount)
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      const voices = window.speechSynthesis.getVoices();
-      console.log('🎙️ Available voices:', voices.length);
-      voices.slice(0, 3).forEach((voice, i) => {
-        console.log(`  ${i}: ${voice.name} (${voice.lang})`);
-      });
-    }
-  }, []);
-
-  // Load voices when they're ready (async on some browsers)
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        const voices = window.speechSynthesis.getVoices();
-        console.log('🎙️ Voices loaded/updated:', voices.length);
-      };
-    }
-  }, []);
-
   const handleVoiceInput = () => {
     if (!recognitionRef.current) {
       alert('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
@@ -142,51 +121,7 @@ export default function InputContainer({
     }
   };
 
-  // TIER 1: Browser TTS (instant, 0-500ms)
-  const playBrowserTTS = (text: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (!('speechSynthesis' in window)) {
-        reject(new Error('Speech synthesis not supported'));
-        return;
-      }
-
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      // Try to find a natural female voice
-      const voices = window.speechSynthesis.getVoices();
-      const femaleVoice = voices.find((v) =>
-        v.name.toLowerCase().includes('female') ||
-        v.name.toLowerCase().includes('woman') ||
-        v.name.toLowerCase().includes('samantha') ||
-        v.name.toLowerCase().includes('victoria')
-      ) || voices[1] || voices[0];
-
-      if (femaleVoice) {
-        utterance.voice = femaleVoice;
-        console.log('🎙️ Using voice:', femaleVoice.name);
-      }
-
-      utterance.onend = () => {
-        console.log('✅ Browser TTS ended');
-        resolve();
-      };
-
-      utterance.onerror = (event) => {
-        console.error('❌ Browser TTS error:', event.error);
-        reject(new Error(event.error));
-      };
-
-      console.log('▶️ Speaking (browser TTS)...');
-      window.speechSynthesis.speak(utterance);
-    });
-  };
-
-  // TIER 2: ElevenLabs streaming (background or fallback)
+  // ONLY ELEVENLABS - Your custom voice ID
   const playElevenLabsAudio = async (text: string): Promise<void> => {
     try {
       console.log('🔊 Fetching ElevenLabs audio...');
@@ -240,9 +175,9 @@ export default function InputContainer({
     }
   };
 
-  // ORCHESTRATOR: Try browser TTS first, then ElevenLabs
+  // ELEVENLABS ONLY - Your custom voice
   const handleTTS = async () => {
-    console.log('🎤 handleTTS called (optimized), lastMessage:', lastMessage?.substring(0, 100));
+    console.log('🎤 handleTTS called (ElevenLabs ONLY), lastMessage:', lastMessage?.substring(0, 100));
     
     if (!lastMessage) {
       console.log('❌ No lastMessage, returning');
@@ -252,7 +187,6 @@ export default function InputContainer({
     // If already playing, stop
     if (isPlaying) {
       console.log('⏹️ Stopping current audio');
-      window.speechSynthesis.cancel();
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -261,25 +195,12 @@ export default function InputContainer({
     }
 
     try {
-      console.log('🔊 Starting TTS (instant browser playback)...');
+      console.log('🔊 Starting TTS with ElevenLabs (your voice)...');
       setAudioLoading(true);
       setIsPlaying(true);
 
-      // TIER 1: INSTANT PLAYBACK with Browser Web Speech API
-      if ('speechSynthesis' in window) {
-        try {
-          await playBrowserTTS(lastMessage);
-          console.log('✅ Browser TTS playback completed');
-        } catch (error) {
-          console.warn('⚠️ Browser TTS failed, trying ElevenLabs:', error);
-          // Fall through to ElevenLabs
-          await playElevenLabsAudio(lastMessage);
-        }
-      } else {
-        // Browser doesn't support speech synthesis, use ElevenLabs only
-        console.log('ℹ️ Browser TTS not available, using ElevenLabs');
-        await playElevenLabsAudio(lastMessage);
-      }
+      await playElevenLabsAudio(lastMessage);
+      console.log('✅ ElevenLabs playback completed');
 
       setIsPlaying(false);
     } catch (error) {
