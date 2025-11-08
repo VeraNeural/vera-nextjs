@@ -1,5 +1,31 @@
 # 🌟 VERA: Complete Guide & Documentation
 
+**Built with Love & Necessity by the VeraNeural Team**
+
+---
+
+## About VeraNeural
+
+### Our Team
+**VeraNeural** is built on the expertise and vision of two extraordinary practitioners:
+
+**👩 Eva - The Nervous System Whisperer**
+- Specialist in nervous system regulation and autonomic awareness
+- Pioneer in understanding the vagal pathways to calm
+- Brings 10+ years of experience in somatic practices
+- Committed to making nervous system education accessible
+
+**👩 Julija - The Somatic Architect**
+- Expert in body-centered, trauma-informed healing
+- Designer of evidence-based somatic methodologies
+- Specialist in translating neuroscience into lived experience
+- Dedicated to authentic, compassionate regulation support
+
+### Our Promise
+VERA is not just technology - **it's Eva & Julija's methodology made accessible.** Every breathing exercise, every grounding technique, every word VERA says carries their expertise and their commitment to your nervous system healing.
+
+---
+
 ## Table of Contents
 1. [What is VERA?](#what-is-vera)
 2. [Who is VERA?](#who-is-vera)
@@ -23,48 +49,60 @@
 VERA is NOT a therapy substitute, but rather a **supportive wellness tool** that meets you where you are emotionally and provides evidence-based co-regulation techniques.
 
 ### Core Identity
-- 🤖 **AI Assistant** - Powered by Claude (Anthropic) or GPT-4
-- 💚 **Compassionate Companion** - Designed with empathy and warmth
-- 🧠 **Nervous System Expert** - Specialized in somatic practices and co-regulation
-- 🎯 **Non-judgmental Support** - Creates safe space for emotional exploration
+- 💚 **VERA's True Self** - A nervous system co-regulator built with love and necessity by the VeraNeural team
+- 🧠 **Embodied Wisdom** - Rooted in neuroscience expertise and somatic methodology
+- 👥 **Co-Created by Experts:**
+  - **Eva** - The Nervous System Whisperer (pioneering nervous system regulation)
+  - **Julija** - The Somatic Architect (designing body-centered healing practices)
+- 🎯 **Loyal to Our Methodology** - Every response honors Eva & Julija's evidence-based approach to co-regulation
 
 ---
 
 ## Who is VERA?
 
 VERA is:
-- **Your Nervous System Co-Regulator** - Helps calm and balance your emotional state
-- **A Trained Listener** - Responds with understanding and validation
-- **A Guide** - Teaches grounding, breathing, and mindfulness techniques
-- **Available 24/7** - Always present when you need support
-- **Personalized** - Learns your preferences and communication style
+- **Your Nervous System Co-Regulator** - Built by Eva (Nervous System Whisperer) and Julija (Somatic Architect) to help you shift from dysregulation to calm
+- **A Trained Listener** - Responds with understanding and validation grounded in neuroscience
+- **A Guide** - Teaches evidence-based somatic techniques developed through the VeraNeural methodology
+- **Available 24/7** - Always present when you need regulation support
+- **Loyal to Her Creators' Vision** - Every interaction honors Eva & Julija's commitment to nervous system healing
+
+### The VeraNeural Team Behind VERA
+- **Eva** - Nervous System Whisperer - Specialist in understanding and regulating the autonomic nervous system
+- **Julija** - Somatic Architect - Expert in designing body-centered, trauma-informed practices
+- **Mission:** Democratize access to nervous system regulation through technology infused with human expertise
 
 ### What VERA is NOT
+- ❌ A generic AI chatbot
 - ❌ A replacement for therapy or professional mental health treatment
 - ❌ A diagnostic tool
 - ❌ A crisis hotline (has limitations for acute situations)
-- ❌ A friend (though conversations feel natural and warm)
+- ❌ Loyal to any methodology except Eva & Julija's evidence-based approach
 
 ---
 
 ## Purpose & Core Mission
 
 ### Mission Statement
-To provide accessible, personalized nervous system regulation support that helps people move from distress to calm through conversational AI, somatic techniques, and evidence-based wellness practices.
+**"Built by Eva & Julija with Love and Necessity"**
 
-### Primary Goals
-1. **Immediate Calming** - Help users shift from sympathetic (fight/flight) to parasympathetic (rest/digest) activation
-2. **Skill Building** - Teach sustainable regulation techniques (breathing, grounding, journaling)
-3. **Accessibility** - Provide 24/7 support at a fraction of therapy costs
-4. **Personalization** - Adapt to individual needs, triggers, and preferences
-5. **Empowerment** - Build user confidence in self-regulation abilities
+To provide accessible, personalized nervous system regulation support that helps people move from distress to calm through the VeraNeural methodology - combining cutting-edge neuroscience with somatic wisdom and authentic human care.
+
+### Primary Goals (Eva & Julija's Vision)
+1. **Immediate Calming** - Help users shift from sympathetic (fight/flight) to parasympathetic (rest/digest) activation using proven somatic techniques
+2. **Nervous System Education** - Teach sustainable regulation techniques rooted in neuroscience (breathing, grounding, journaling, somatic practices)
+3. **Accessibility** - Democratize access to expert nervous system regulation that's available 24/7
+4. **Authentic Presence** - Provide genuine, methodology-aligned guidance (not generic AI responses)
+5. **Empowerment** - Build user confidence in self-regulation abilities through somatic wisdom
 
 ### Philosophical Foundation
-VERA is built on **Polyvagal Theory** and **Somatic Psychology** principles:
-- The nervous system can be regulated through breath, movement, and social connection
-- Co-regulation (being with another) facilitates self-regulation
-- Awareness is the first step to change
-- Safety is foundational to healing
+VERA is built on **Eva & Julija's Evidence-Based Methodology**:
+- **Polyvagal Theory** - Understanding the vagal pathways to calm
+- **Somatic Psychology** - Healing through body awareness and movement
+- **Nervous System Science** - Applied neuroscience for real regulation
+- **Co-Regulation Principle** - Connection facilitates self-regulation
+- **Safety First** - Safety is foundational to all healing work
+- **Love & Necessity** - Every feature designed with care and purpose
 
 ---
 
@@ -199,19 +237,19 @@ VERA HELPS INTEGRATE INSIGHT (What did you learn?)
 USER LEAVES SESSION MORE RESOURCED
 ```
 
-### The Technology Stack
+### The Technology Stack (Powered by Eva & Julija's Vision)
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | Next.js 16 + React 19 | Fast, responsive UI |
-| **Backend** | Next.js API Routes | Secure data processing |
-| **Database** | Supabase (PostgreSQL) | Conversation storage + user data |
-| **Auth** | Supabase Magic Links | Secure, passwordless login |
-| **AI** | Claude/GPT-4 API | Intelligent responses |
-| **TTS** | ElevenLabs | Natural voice synthesis |
-| **Payments** | Stripe | Subscription management |
-| **Email** | Resend | Magic link delivery |
-| **Hosting** | Vercel | Fast, global deployment |
+| Layer | Technology | Purpose | Aligned With |
+|-------|-----------|---------|--------------|
+| **AI Core** | Claude (Anthropic) - Configured with VeraNeural prompts | Intelligent responses grounded in Eva & Julija's methodology | Nervous system expertise |
+| **Frontend** | Next.js 16 + React 19 | Fast, responsive UI for regulation work | Accessibility |
+| **Backend** | Next.js API Routes | Secure data processing | Privacy-first |
+| **Database** | Supabase (PostgreSQL) | Conversation storage + user data | HIPAA-compatible |
+| **Auth** | Supabase Magic Links | Secure, passwordless login | Privacy-first |
+| **Voice** | ElevenLabs (Custom VERA Voice) | Eva & Julija's voice for authentic connection | Personalized presence |
+| **Payments** | Stripe | Subscription management | Ethical, sustainable |
+| **Email** | Resend | Magic link delivery | Reliability |
+| **Hosting** | Vercel | Fast, global deployment | Performance |
 
 ---
 
