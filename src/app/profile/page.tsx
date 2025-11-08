@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'settings' | 'saved' | 'account'>('profile');
   const [savedMessages, setSavedMessages] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<string>('dark');
 
   // Profile form states
   const [name, setName] = useState('');
@@ -34,6 +35,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     loadProfile();
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setCurrentTheme(savedTheme);
   }, []);
 
   useEffect(() => {
@@ -355,6 +359,39 @@ export default function ProfilePage() {
                   <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                     App Settings
                   </h2>
+
+                  {/* Theme Selection */}
+                  <div className="pb-6 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                    <p className="font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+                      Theme
+                    </p>
+                    <div className="flex gap-3">
+                      {['light', 'dark', 'deep'].map((theme) => (
+                        <button
+                          key={theme}
+                          onClick={() => {
+                            document.documentElement.setAttribute('data-theme', theme);
+                            localStorage.setItem('theme', theme);
+                            setCurrentTheme(theme);
+                          }}
+                          className="px-4 py-2 rounded-lg font-medium transition-all capitalize"
+                          style={{
+                            backgroundColor:
+                              currentTheme === theme
+                                ? 'rgba(168, 184, 232, 0.8)'
+                                : 'rgba(255, 255, 255, 0.1)',
+                            color:
+                              currentTheme === theme
+                                ? 'white'
+                                : 'var(--text-secondary)',
+                            border: currentTheme === theme ? '2px solid rgba(168, 184, 232, 1)' : '2px solid transparent',
+                          }}
+                        >
+                          {theme === 'deep' ? '✨ Deep' : theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="space-y-4">
                     {/* Notifications Toggle */}
