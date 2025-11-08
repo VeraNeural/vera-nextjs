@@ -50,6 +50,7 @@ import {
   analyzeBiometrics,
   mergeBiometricWithTextAnalysis,
 } from './biometric-integration';
+import { analyzeVoiceForNervousSystem, generateVoiceAwareResponse } from './voice-analysis';
 
 // ============================================================================
 // SESSION MANAGEMENT
@@ -364,6 +365,55 @@ export class VERACoreEngine {
         shouldTrack: true,
       },
     };
+  }
+
+  /**
+   * Process voice message with vocal biomarker analysis
+   */
+  async processVoiceMessage(
+    audioBuffer: ArrayBuffer,
+    transcript: string,
+    elevenLabsApiKey?: string
+  ): Promise<VERAResponse & { audioUrl?: string; voiceAnalysis?: any }> {
+    const startTime = Date.now();
+
+    // STEP 1: Analyze voice for nervous system state
+    const voiceAnalysis = analyzeVoiceForNervousSystem(audioBuffer, transcript);
+    
+    console.log(`[VERA Voice] Detected state: ${voiceAnalysis.nervousSystemState.primary} (${voiceAnalysis.nervousSystemState.confidence}% confidence)`);
+    console.log(`[VERA Voice] Indicators:`, voiceAnalysis.nervousSystemState.indicators);
+
+    // STEP 2: Process message normally (includes text-based adaptive codes)
+    const response = await this.processMessage(transcript);
+
+    // STEP 3: Enhance with voice-detected state (override if higher confidence)
+    if (voiceAnalysis.nervousSystemState.confidence > 70) {
+      response.detectedPatterns.quantumState.primaryState = voiceAnalysis.nervousSystemState.primary;
+      response.detectedPatterns.adaptiveCodes.unshift({
+        code: `VOICE_${voiceAnalysis.nervousSystemState.primary.toUpperCase()}`,
+        intensity: voiceAnalysis.nervousSystemState.confidence,
+      });
+    }
+
+    // STEP 4: Generate voice-aware audio response (if ElevenLabs key provided)
+    let audioUrl: string | undefined;
+    if (elevenLabsApiKey) {
+      const voiceResponse = await generateVoiceAwareResponse(
+        response.content,
+        voiceAnalysis.nervousSystemState.primary,
+        elevenLabsApiKey
+      );
+      audioUrl = voiceResponse.audioUrl;
+    }
+
+    return {
+      ...response,
+      audioUrl,
+      voiceAnalysis,
+      detectedPatterns: {
+        ...response.detectedPatterns,
+      },
+    } as VERAResponse & { audioUrl?: string; voiceAnalysis?: any };
   }
 
   /**
