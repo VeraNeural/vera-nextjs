@@ -1,13 +1,33 @@
 ﻿'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    router.push('/auth/signup');
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/profile');
+        if (response.ok) {
+          // User is authenticated, redirect to chat
+          router.push('/chat-exact');
+        } else {
+          // User is not authenticated, redirect to signup
+          router.push('/auth/signup');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        // If error, redirect to signup as fallback
+        router.push('/auth/signup');
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
   return (
@@ -19,7 +39,7 @@ export default function Home() {
       background: '#1a1a2e',
       color: 'white',
     }}>
-      <p>Redirecting to signup...</p>
+      <p>Redirecting...</p>
     </div>
   );
 }

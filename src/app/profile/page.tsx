@@ -195,7 +195,7 @@ export default function ProfilePage() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('/')}
+                onClick={() => router.push('/chat-exact')}
                 className="px-4 py-2 rounded-lg transition-colors"
                 style={{
                   backgroundColor: 'rgba(168, 184, 232, 0.1)',
