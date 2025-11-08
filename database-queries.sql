@@ -2,6 +2,28 @@
 -- Copy/paste these into Supabase SQL Editor as needed
 
 -- ========================================
+-- ⚠️ CAN'T SEE USERS? HERE'S WHY + FIX
+-- ========================================
+-- RLS (Row Level Security) policies hide other users from you!
+-- Run this to see ALL users (bypasses RLS):
+
+SELECT 
+  id,
+  email,
+  subscription_status,
+  trial_end,
+  created_at,
+  EXTRACT(EPOCH FROM (trial_end - NOW())) / 3600 as hours_remaining
+FROM users
+ORDER BY created_at DESC;
+
+-- If this STILL shows 0 users, check if auth.users exist:
+SELECT COUNT(*) as users_in_auth FROM auth.users;
+
+-- If auth.users > 0 but public.users = 0, users weren't created by callback.
+-- See DEBUG_USERS.sql for fix.
+
+-- ========================================
 -- CHECK USER TRIAL STATUS
 -- ========================================
 -- Replace 'your-email@domain.com' with test email
