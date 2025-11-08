@@ -17,8 +17,9 @@ export default function TrialBannerExact({
 }: TrialBannerExactProps) {
   const [timeString, setTimeString] = useState('');
   
-  const progressPercent = (messagesUsed / totalMessages) * 100;
+  const progressPercent = totalMessages > 0 ? (messagesUsed / totalMessages) * 100 : 0;
   const isCritical = hoursRemaining <= 12;
+  const showMessages = totalMessages > 0;
 
   useEffect(() => {
     const updateTime = () => {
@@ -41,17 +42,15 @@ export default function TrialBannerExact({
       style={{
         position: 'relative',
         zIndex: 90,
-        background: isCritical 
-          ? 'linear-gradient(135deg, #F44336 0%, #D32F2F 100%)' 
-          : 'linear-gradient(135deg, #F5A623 0%, #FF9800 100%)',
-        padding: '12px 20px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'rgba(30, 30, 50, 0.3)',
+        borderBottom: '1px solid rgba(100, 100, 120, 0.15)',
+        padding: '10px 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '16px',
         flexShrink: 0,
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+        boxShadow: 'none',
       }}
     >
       {/* Left: Trial Info */}
@@ -59,88 +58,107 @@ export default function TrialBannerExact({
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
           <span
             style={{
-              color: '#fff',
+              color: '#888',
               fontSize: '13px',
-              fontWeight: 600,
-              letterSpacing: '0.5px',
+              fontWeight: 500,
+              letterSpacing: '0.3px',
             }}
           >
-            TRIAL PERIOD
+            Trial
           </span>
           <span
             style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              color: '#fff',
+              background: 'rgba(100, 100, 120, 0.1)',
+              color: '#888',
               padding: '2px 8px',
-              borderRadius: '10px',
+              borderRadius: '6px',
               fontSize: '11px',
-              fontWeight: 600,
+              fontWeight: 500,
+              border: '1px solid rgba(100, 100, 120, 0.15)',
             }}
           >
             {timeString} remaining
           </span>
         </div>
         
-        <p
-          style={{
-            color: 'rgba(255, 255, 255, 0.9)',
-            fontSize: '12px',
-            marginBottom: '8px',
-          }}
-        >
-          {messagesUsed} of {totalMessages} messages used
-        </p>
+        {showMessages && (
+          <>
+            <p
+              style={{
+                color: '#888',
+                fontSize: '12px',
+                marginBottom: '8px',
+              }}
+            >
+              {messagesUsed} of {totalMessages} messages used
+            </p>
 
-        {/* Progress Bar */}
-        <div
-          style={{
-            width: '100%',
-            height: '6px',
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: '10px',
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          <div
-            style={{
-              height: '100%',
-              background: '#fff',
-              borderRadius: '10px',
-              width: `${progressPercent}%`,
-              transition: 'width 0.3s ease',
-              boxShadow: '0 0 10px rgba(255, 255, 255, 0.5)',
-            }}
-          />
-        </div>
+            {/* Progress Bar */}
+            <div
+              style={{
+                width: '100%',
+                height: '4px',
+                background: 'rgba(100, 100, 120, 0.1)',
+                borderRadius: '6px',
+                overflow: 'hidden',
+                position: 'relative',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  background: 'rgba(139, 92, 246, 0.3)',
+                  borderRadius: '6px',
+                  width: `${progressPercent}%`,
+                  transition: 'width 0.3s ease',
+                  boxShadow: 'none',
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Right: Upgrade Button */}
       <button
-        onClick={onUpgrade}
+        onClick={async () => {
+          try {
+            const response = await fetch('/api/billing/checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ plan: 'monthly' }),
+            });
+            const data = await response.json();
+            if (data.url) {
+              window.location.href = data.url;
+            }
+          } catch (error) {
+            console.error('Checkout error:', error);
+          }
+        }}
         style={{
-          padding: '10px 20px',
-          background: '#fff',
-          color: isCritical ? '#D32F2F' : '#F5A623',
-          border: 'none',
-          borderRadius: '20px',
+          padding: '8px 16px',
+          background: 'rgba(139, 92, 246, 0.2)',
+          color: '#888',
+          border: '1px solid rgba(139, 92, 246, 0.25)',
+          borderRadius: '6px',
           fontSize: '13px',
-          fontWeight: 600,
+          fontWeight: 500,
           cursor: 'pointer',
-          transition: 'all 0.3s ease',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          transition: 'all 0.2s ease',
+          boxShadow: 'none',
           whiteSpace: 'nowrap',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
+          e.currentTarget.style.background = 'rgba(139, 92, 246, 0.25)';
+          e.currentTarget.style.color = '#aaa';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+          e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
+          e.currentTarget.style.color = '#888';
         }}
       >
-        Upgrade Now
+        Upgrade
       </button>
     </div>
   );

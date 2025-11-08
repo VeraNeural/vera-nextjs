@@ -7,11 +7,17 @@ import { NextResponse } from 'next/server';
 const CANONICAL_HOST = (process.env.APP_CANONICAL_HOST || '').toLowerCase();
 const ENFORCE = process.env.APP_ENFORCE_CANONICAL === 'true';
 
+// Validate domain format
+const isValidDomain = !CANONICAL_HOST || !/^[\w-]+(\.[\w-]+)*(\.[a-z]{2,})$/.test(CANONICAL_HOST);
+if (isValidDomain && CANONICAL_HOST) {
+  console.warn('Invalid CANONICAL_HOST configured. Skipping enforcement.');
+}
+
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
 
-  // Skip when not enforcing, in development, or no canonical set
-  if (!ENFORCE || process.env.NODE_ENV !== 'production' || !CANONICAL_HOST) {
+  // Skip when not enforcing, in development, invalid domain, or no canonical set
+  if (!ENFORCE || process.env.NODE_ENV !== 'production' || isValidDomain || !CANONICAL_HOST) {
     return NextResponse.next();
   }
 

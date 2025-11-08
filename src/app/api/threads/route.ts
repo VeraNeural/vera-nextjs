@@ -4,6 +4,10 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getAccessStatus } from '@/lib/access';
 
+// Ensure dynamic and always fresh
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET: Fetch all threads for the authenticated user
 export async function GET(request: NextRequest) {
   try {
@@ -48,7 +52,11 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ Fetched threads:', threads?.length || 0);
-    return NextResponse.json({ threads });
+    return NextResponse.json({ threads }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
   } catch (error) {
     console.error('❌ Threads API error:', error);
     return NextResponse.json(
@@ -147,12 +155,21 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Thread created:', thread.id);
-    return NextResponse.json({ thread });
+    return NextResponse.json({ thread }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
   } catch (error) {
     console.error('❌ Thread creation error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     );
   }
 }

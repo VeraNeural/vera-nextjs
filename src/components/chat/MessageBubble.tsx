@@ -118,7 +118,7 @@ export default function MessageBubble({
 
         {/* Actions */}
         <div className="flex items-center gap-3 mt-2 text-sm text-text-tertiary">
-          <span>{formatDistanceToNow(timestamp, { addSuffix: true })}</span>
+          <span>{formatDistanceToNow(new Date(timestamp), { addSuffix: true })}</span>
           
           {onSave && (
             <button

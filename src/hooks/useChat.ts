@@ -190,11 +190,29 @@ export function useChat(): UseChatReturn {
         requestBody.biometricData = biometricData;
       }
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+      console.log('📤 Sending chat request to /api/chat', {
+        hasMessage: !!content.trim(),
+        hasImage: !!imageData,
+        messageLength: content.trim().length,
       });
+
+      // Create abort controller with 60s timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      let response;
+      try {
+        response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      console.log('📥 Received response from /api/chat:', response.status, response.statusText);
 
       const data: ChatResponse = await response.json();
 
@@ -235,8 +253,29 @@ export function useChat(): UseChatReturn {
         console.warn('Crisis detected in message');
       }
     } catch (err) {
-      console.error('Chat error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+      console.error('❌ Chat error:', err);
+      let errorMessage = 'Failed to send message';
+      
+      // Determine exact error type
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          errorMessage = 'Request timed out after 60 seconds. Server is taking too long or connection is slow.';
+        } else if (err.message.includes('fetch')) {
+          errorMessage = 'Network connection failed. Check your internet.';
+        } else if (err.message.includes('401')) {
+          errorMessage = 'Session expired. Please refresh and log in again.';
+        } else if (err.message.includes('403')) {
+          errorMessage = 'Trial expired. Please upgrade to continue.';
+        } else if (err.message.includes('500')) {
+          errorMessage = 'Server error. Try again in a moment.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      console.error('Error type:', err instanceof Error ? err.name : typeof err);
+      console.error('Error message:', errorMessage);
+      
       setError(errorMessage);
 
       // Add error message to chat

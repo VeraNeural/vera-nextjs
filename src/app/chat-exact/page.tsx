@@ -32,9 +32,14 @@ export default function ChatPage() {
   };
 
   // Calculate trial stats
-  const totalMessages = 50;
-  const messagesUsed = 0; // TODO: Get from trial state
+  const totalMessages = 0; // Not tracking message limits
+  const messagesUsed = 0; // Not tracking message limits
   const hoursRemaining = trial?.hoursRemaining || 48;
+
+  // Get last assistant message for TTS
+  const lastAssistantMessage = messages.length > 0 
+    ? [...messages].reverse().find(msg => msg.role === 'assistant')?.content 
+    : undefined;
 
   return (
     <MainLayout showSidebar={true}>
@@ -51,8 +56,8 @@ export default function ChatPage() {
           display: 'flex',
           flexDirection: 'column',
           height: '100vh',
-          marginLeft: sidebarOpen ? '280px' : '0',
-          transition: 'margin-left 0.3s ease',
+          marginLeft: '0',
+          width: '100%',
         }}
       >
         {/* Header - Frozen */}
@@ -67,7 +72,7 @@ export default function ChatPage() {
             messagesUsed={messagesUsed}
             totalMessages={totalMessages}
             hoursRemaining={hoursRemaining}
-            onUpgrade={() => console.log('Upgrade')}
+            onUpgrade={() => window.location.href = '/profile'}
           />
         )}
 
@@ -76,16 +81,17 @@ export default function ChatPage() {
           <WelcomeStateExact
             onQuickAction={(action) => {
               if (action === 'breathing') {
-                // TODO: Open breathing modal
-                console.log('Open breathing modal');
+                handleSend('Can you guide me through a breathing exercise?');
               } else if (action === 'journal') {
-                // TODO: Open journaling panel
-                console.log('Open journaling panel');
+                handleSend('I want to journal about what I\'m experiencing right now');
               } else if (action === 'grounding') {
-                // TODO: Open grounding panel
-                console.log('Open grounding panel');
+                handleSend('I need help with a grounding technique');
               } else if (action === 'emotions') {
                 handleSend('I need help processing my emotions right now');
+              } else if (action === 'decode') {
+                handleSend('I\'m experiencing sensations in my body and want to understand what they mean');
+              } else if (action === 'regulate') {
+                handleSend('I need help regulating my nervous system right now');
               }
             }}
           />
@@ -109,6 +115,7 @@ export default function ChatPage() {
           onSend={handleSend}
           disabled={loading || trialLoading}
           placeholder="Share what's on your mind..."
+          lastMessage={lastAssistantMessage}
         />
       </div>
     </MainLayout>

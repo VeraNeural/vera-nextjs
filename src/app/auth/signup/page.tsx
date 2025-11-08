@@ -57,7 +57,7 @@ export default function SignupPage() {
       paddingBottom: '60px',
     }}>
       {/* Starfield background effect */}
-      <div className="absolute inset-0 opacity-20">
+  <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ zIndex: 1 }}>
         <div className="absolute top-10 left-20 w-1 h-1 bg-white rounded-full animate-pulse"></div>
         <div className="absolute top-40 right-32 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
         <div className="absolute bottom-32 left-40 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -66,7 +66,7 @@ export default function SignupPage() {
       </div>
 
       {/* Main content */}
-      <div className="max-w-lg w-full flex flex-col items-center gap-4 sm:gap-5 relative z-10" style={{ marginTop: '0' }}>
+  <div className="max-w-lg w-full flex flex-col items-center gap-4 sm:gap-5 relative" style={{ marginTop: '0', zIndex: 2 }}>
         {/* Large breathing orb */}
         <div className="relative mb-3">
           <BreathingOrb size={180} animate={true} showShimmer={true} />

@@ -56,14 +56,17 @@ export default function TrialCornerIndicator({
         onClick={() => setExpanded(!expanded)}
         style={{
           background: isCritical 
-            ? 'linear-gradient(135deg, #F44336 0%, #D32F2F 100%)' 
-            : 'linear-gradient(135deg, #F5A623 0%, #FF9800 100%)',
-          borderRadius: '12px',
-          padding: expanded ? '12px 16px' : '8px 12px',
+            ? 'rgba(180, 100, 100, 0.15)'
+            : 'rgba(100, 100, 120, 0.1)',
+          border: isCritical
+            ? '1px solid rgba(180, 100, 100, 0.25)'
+            : '1px solid rgba(100, 100, 120, 0.15)',
+          borderRadius: '8px',
+          padding: expanded ? '12px 14px' : '7px 10px',
           cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+          boxShadow: 'none',
           transition: 'all 0.3s ease',
-          minWidth: expanded ? '240px' : 'auto',
+          minWidth: expanded ? '220px' : 'auto',
         }}
       >
         {/* Collapsed View */}
@@ -71,19 +74,19 @@ export default function TrialCornerIndicator({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span
               style={{
-                color: '#fff',
+                color: '#888',
                 fontSize: '11px',
-                fontWeight: 600,
+                fontWeight: '500',
                 letterSpacing: '0.3px',
               }}
             >
-              TRIAL
+              Trial
             </span>
             <span
               style={{
-                color: 'rgba(255, 255, 255, 0.95)',
+                color: '#999',
                 fontSize: '11px',
-                fontWeight: 500,
+                fontWeight: '400',
               }}
             >
               {timeString}
@@ -97,22 +100,23 @@ export default function TrialCornerIndicator({
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <span
                 style={{
-                  color: '#fff',
+                  color: '#888',
                   fontSize: '11px',
-                  fontWeight: 600,
-                  letterSpacing: '0.5px',
+                  fontWeight: '500',
+                  letterSpacing: '0.3px',
                 }}
               >
-                TRIAL PERIOD
+                Trial Period
               </span>
               <span
                 style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  color: '#fff',
+                  background: 'rgba(100, 100, 120, 0.1)',
+                  color: '#888',
                   padding: '2px 6px',
-                  borderRadius: '8px',
+                  borderRadius: '6px',
                   fontSize: '10px',
-                  fontWeight: 600,
+                  fontWeight: '500',
+                  border: '1px solid rgba(100, 100, 120, 0.15)',
                 }}
               >
                 {timeString}
@@ -122,7 +126,7 @@ export default function TrialCornerIndicator({
               <>
                 <p
                   style={{
-                    color: 'rgba(255, 255, 255, 0.9)',
+                    color: '#888',
                     fontSize: '11px',
                     marginBottom: '8px',
                   }}
@@ -135,8 +139,8 @@ export default function TrialCornerIndicator({
                   style={{
                     width: '100%',
                     height: '4px',
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: '8px',
+                    background: 'rgba(100, 100, 120, 0.1)',
+                    borderRadius: '6px',
                     overflow: 'hidden',
                     marginBottom: '10px',
                   }}
@@ -144,8 +148,8 @@ export default function TrialCornerIndicator({
                   <div
                     style={{
                       height: '100%',
-                      background: '#fff',
-                      borderRadius: '8px',
+                      background: 'rgba(139, 92, 246, 0.3)',
+                      borderRadius: '6px',
                       width: `${progressPercent}%`,
                       transition: 'width 0.3s ease',
                     }}
@@ -163,23 +167,25 @@ export default function TrialCornerIndicator({
               style={{
                 width: '100%',
                 padding: '6px 12px',
-                background: '#fff',
-                color: isCritical ? '#D32F2F' : '#F5A623',
-                border: 'none',
-                borderRadius: '8px',
+                background: 'rgba(139, 92, 246, 0.2)',
+                color: '#888',
+                border: '1px solid rgba(139, 92, 246, 0.25)',
+                borderRadius: '6px',
                 fontSize: '11px',
-                fontWeight: 600,
+                fontWeight: '500',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.02)';
+                e.currentTarget.style.background = 'rgba(139, 92, 246, 0.25)';
+                e.currentTarget.style.color = '#aaa';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
+                e.currentTarget.style.color = '#888';
               }}
             >
-              Upgrade Now
+              Upgrade
             </button>
           </div>
         )}

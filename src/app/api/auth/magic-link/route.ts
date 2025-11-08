@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
   const origin = request.nextUrl.origin;
 
     // Generate OTP token but don't send email (we'll send it ourselves)
+    // Kick off Supabase's own email as a safety net (will use Supabase templates)
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -30,38 +31,41 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const supabaseEmailStarted = !error;
     if (error) {
-      console.error('Supabase auth error:', error.message, error);
-      
-      // If Supabase email fails, that's okay - we'll handle it
-      // Continue anyway to send our custom email
+      console.error('Supabase signInWithOtp error (will try Resend path):', error.message);
     }
 
-    // Generate a magic link manually using Supabase's admin API (requires service role)
-    const supabaseAdmin = createServiceClient();
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-    });
-
-    if (linkError) {
-      console.error('Failed to generate magic link:', linkError);
-      return NextResponse.json(
-        { error: 'Failed to generate magic link' },
-        { status: 500 }
-      );
+    // Try to generate our own branded link via service role (optional)
+    let token: string | null = null;
+    let type: string | null = null;
+    try {
+      if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const supabaseAdmin = createServiceClient();
+        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email,
+        });
+        if (linkError) throw linkError;
+        const actionUrl = new URL(linkData.properties.action_link);
+        token = actionUrl.searchParams.get('token');
+        type = actionUrl.searchParams.get('type');
+      } else {
+        console.warn('Missing SUPABASE_SERVICE_ROLE_KEY; falling back to Supabase email.');
+      }
+    } catch (e) {
+      console.error('Failed to generate magic link (admin):', e);
     }
 
-    // Extract token from the action_link and build our own redirect URL
-    const actionUrl = new URL(linkData.properties.action_link);
-    const token = actionUrl.searchParams.get('token');
-    const type = actionUrl.searchParams.get('type');
-    
-    // Build callback URL with token_hash parameter
-  const callbackUrl = `${origin}/api/auth/callback?token_hash=${token}&type=${type}`;
+    // If we successfully generated a token, try to send branded email via Resend
+    const callbackUrl = token && type
+      ? `${origin}/api/auth/callback?token_hash=${token}&type=${type}`
+      : null;
 
     // Send beautiful branded email via Resend
-    const emailResult = await resend.emails.send({
+    let resendOk = false;
+    if (callbackUrl && process.env.RESEND_API_KEY) {
+      const emailResult = await resend.emails.send({
       from: 'VERA <support@veraneural.com>',
       to: email,
       subject: 'Your VERA Magic Link ✨',
@@ -102,19 +106,21 @@ export async function POST(request: NextRequest) {
           </p>
         </div>
       `,
-    });
-
-    if (emailResult.error) {
-      console.error('Resend email error:', emailResult.error);
-      return NextResponse.json(
-        { error: 'Failed to send email' },
-        { status: 500 }
-      );
+      });
+      if (emailResult.error) {
+        console.error('Resend email error:', emailResult.error);
+      } else {
+        resendOk = true;
+        console.log('Magic link email sent via Resend:', emailResult.data);
+      }
     }
 
-    console.log('Magic link email sent successfully via Resend:', emailResult.data);
+    // Final result decision: if Resend worked, success; otherwise if Supabase email started, success; else error
+    if (resendOk || supabaseEmailStarted) {
+      return NextResponse.json({ success: true, via: resendOk ? 'resend' : 'supabase' });
+    }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ error: 'Unable to send magic link' }, { status: 500 });
   } catch (error) {
     console.error('Magic link error:', error);
     return NextResponse.json(

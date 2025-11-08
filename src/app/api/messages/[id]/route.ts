@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Enforce subscription/trial access
-    const access = await getAccessStatus(supabase as any, user.id);
+    const access = await getAccessStatus(supabase, user.id);
     if (!access.allowed) {
       return NextResponse.json(
         {
@@ -54,7 +54,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ message });
+    // Transform snake_case to camelCase for frontend
+    const transformedMessage = {
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      createdAt: message.created_at,
+      imageData: message.image_data,
+      isSaved: message.is_saved,
+    };
+
+    return NextResponse.json({ message: transformedMessage });
   } catch (error) {
     console.error('Message update error:', error);
     return NextResponse.json(
@@ -79,7 +89,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Enforce subscription/trial access
-    const access = await getAccessStatus(supabase as any, user.id);
+    const access = await getAccessStatus(supabase, user.id);
     if (!access.allowed) {
       return NextResponse.json(
         {

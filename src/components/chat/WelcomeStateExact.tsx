@@ -24,14 +24,16 @@ export default function WelcomeStateExact({ onQuickAction }: WelcomeStateExactPr
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '40px 20px',
+        padding: '32px 16px',
         textAlign: 'center',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       {/* Breathing Orb with float animation */}
       <div
         style={{
-          marginBottom: '32px',
+          marginBottom: '24px',
           animation: 'float 6s ease-in-out infinite, welcomeFadeIn 1s ease-out',
         }}
       >
@@ -41,14 +43,14 @@ export default function WelcomeStateExact({ onQuickAction }: WelcomeStateExactPr
             display: 'inline-block',
           }}
         >
-          <BreathingOrb size={180} animate={true} showShimmer={true} />
+          <BreathingOrb size={140} animate={true} showShimmer={true} />
         </div>
       </div>
 
       {/* Welcome Title */}
       <h1
         style={{
-          fontSize: '32px',
+          fontSize: '28px',
           fontWeight: 300,
           letterSpacing: '0.5px',
           color: 'var(--text-primary)',
@@ -62,9 +64,9 @@ export default function WelcomeStateExact({ onQuickAction }: WelcomeStateExactPr
       {/* Subtitle */}
       <p
         style={{
-          fontSize: '16px',
+          fontSize: '14px',
           color: 'var(--text-secondary)',
-          marginBottom: '40px',
+          marginBottom: '32px',
           maxWidth: '500px',
           lineHeight: '1.6',
           animation: 'subtitleReveal 0.8s ease-out 0.4s backwards',
@@ -77,11 +79,13 @@ export default function WelcomeStateExact({ onQuickAction }: WelcomeStateExactPr
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '16px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '12px',
           maxWidth: '700px',
           width: '100%',
           animation: 'buttonsReveal 0.8s ease-out 0.6s backwards',
+          padding: '0 16px',
+          boxSizing: 'border-box',
         }}
       >
         {quickActions.map((action, index) => (
@@ -89,19 +93,20 @@ export default function WelcomeStateExact({ onQuickAction }: WelcomeStateExactPr
             key={action.action}
             onClick={() => onQuickAction?.(action.action)}
             style={{
-              padding: '20px',
+              padding: '16px 12px',
               background: 'var(--quick-button-bg)',
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
               border: '1px solid var(--border-color)',
-              borderRadius: '16px',
+              borderRadius: '12px',
               cursor: 'pointer',
               transition: 'all 0.3s ease',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '12px',
+              gap: '8px',
               animation: `welcomeFadeIn 0.6s ease-out ${0.7 + index * 0.1}s backwards`,
+              minHeight: '100px',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'var(--quick-button-hover)';
@@ -118,9 +123,11 @@ export default function WelcomeStateExact({ onQuickAction }: WelcomeStateExactPr
           >
             <span
               style={{
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 color: 'var(--text-primary)',
+                textAlign: 'center',
+                lineHeight: '1.3',
               }}
             >
               {action.label}
@@ -132,8 +139,8 @@ export default function WelcomeStateExact({ onQuickAction }: WelcomeStateExactPr
       {/* Bottom hint */}
       <p
         style={{
-          marginTop: '48px',
-          fontSize: '13px',
+          marginTop: '32px',
+          fontSize: '12px',
           color: 'var(--text-secondary)',
           animation: 'fadeIn 1s ease-out 1.2s backwards',
         }}

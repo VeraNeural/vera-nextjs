@@ -1,8 +1,11 @@
 // src/app/api/auth/callback/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 import { createServiceClient } from '@/lib/supabase/service';
 import { cookies } from 'next/headers';
+
+// Ensure this route is always dynamic so auth cookies are written on the response
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -17,7 +20,38 @@ export async function GET(request: NextRequest) {
   console.log('Type:', type);
   console.log('Code:', code ? 'present' : 'missing');
 
-  const supabase = await createClient();
+  // Use @supabase/ssr to manage cookies automatically
+  const cookieStore = await cookies();
+  let response = NextResponse.next();
+  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ name, value, ...options });
+            response.cookies.set(name, value, options);
+          } catch (error) {
+            console.error('Cookie set error:', error);
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set({ name, value: '', ...options });
+            response.cookies.set(name, '', options);
+          } catch (error) {
+            console.error('Cookie remove error:', error);
+          }
+        },
+      },
+    }
+  );
+
   let userData = null;
   let sessionData = null;
 
@@ -65,19 +99,6 @@ export async function GET(request: NextRequest) {
     sessionData = data?.session;
     console.log('✅ Code exchanged for user:', userData?.email);
     console.log('Session created:', sessionData ? 'YES' : 'NO');
-
-    // Explicitly set the session to ensure cookies are written (OAuth flow)
-    if (sessionData) {
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: sessionData.access_token,
-        refresh_token: sessionData.refresh_token,
-      });
-      if (sessionError) {
-        console.error('❌ Failed to set session after code exchange:', sessionError);
-      } else {
-        console.log('✅ Session explicitly set (OAuth)');
-      }
-    }
   }
   else {
     console.error('❌ No auth parameters found');
@@ -119,6 +140,14 @@ export async function GET(request: NextRequest) {
     console.error('⚠️ No session data, but proceeding with redirect');
   }
 
-  console.log('🔄 Redirecting to home page');
-  return NextResponse.redirect(`${requestUrl.origin}/`);
+  console.log('🔄 Redirecting to chat');
+  response = NextResponse.redirect(`${requestUrl.origin}/chat-exact`);
+  
+  // Re-apply cookies to the redirect response
+  const allCookies = cookieStore.getAll();
+  allCookies.forEach(({ name, value }) => {
+    response.cookies.set(name, value);
+  });
+  
+  return response;
 }

@@ -84,12 +84,12 @@ export default function MainLayout({ children, showSidebar = true }: MainLayoutP
         />
       </div>
 
-      {/* Main Content - Frozen header/footer layout */}
+      {/* Main Content Container */}
       <div
         style={{
           position: 'relative',
           zIndex: 1,
-          height: '100vh',
+          height: '100dvh',
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -98,8 +98,6 @@ export default function MainLayout({ children, showSidebar = true }: MainLayoutP
       >
         {children}
       </div>
-
-      {/* Removed inline script injection to avoid hydration issues in production */}
     </>
   );
 }

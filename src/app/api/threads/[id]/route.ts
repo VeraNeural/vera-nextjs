@@ -66,7 +66,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ thread, messages });
+    // Transform snake_case to camelCase for frontend
+    const transformedMessages = messages?.map((msg: any) => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      createdAt: msg.created_at,
+      imageData: msg.image_data,
+      isSaved: msg.is_saved,
+    })) || [];
+
+    return NextResponse.json({ thread, messages: transformedMessages });
   } catch (error) {
     console.error('Thread fetch error:', error);
     return NextResponse.json(

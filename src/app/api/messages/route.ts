@@ -57,7 +57,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ message });
+    // Transform snake_case to camelCase for frontend
+    const transformedMessage = {
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      createdAt: message.created_at,
+      imageData: message.image_data,
+      isSaved: message.is_saved,
+    };
+
+    return NextResponse.json({ message: transformedMessage });
   } catch (error) {
     console.error('Message save error:', error);
     return NextResponse.json(

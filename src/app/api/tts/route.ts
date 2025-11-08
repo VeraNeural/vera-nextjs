@@ -63,6 +63,12 @@ export async function POST(request: NextRequest) {
     // Strip markdown formatting before sending to TTS
     const cleanText = stripMarkdown(text);
 
+    console.log('🎙️ TTS Request:', {
+      textLength: cleanText.length,
+      voiceId: process.env.ELEVENLABS_VOICE_ID,
+      hasApiKey: !!process.env.ELEVENLABS_API_KEY,
+    });
+
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}`,
       {
@@ -74,7 +80,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           text: cleanText,
-          model_id: 'eleven_monolingual_v1',
+          model_id: 'eleven_multilingual_v2',
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,
@@ -84,7 +90,13 @@ export async function POST(request: NextRequest) {
     );
 
     if (!response.ok) {
-      throw new Error('ElevenLabs API error');
+      const errorData = await response.text();
+      console.error('❌ ElevenLabs API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+      });
+      throw new Error(`ElevenLabs API error: ${response.status} ${errorData}`);
     }
 
     const audioData = await response.arrayBuffer();

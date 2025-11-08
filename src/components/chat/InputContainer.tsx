@@ -87,11 +87,41 @@ export default function InputContainer({
 
   // Auto-play TTS when enabled and lastMessage changes
   useEffect(() => {
+    console.log('🎙️ TTS useEffect triggered:', {
+      ttsEnabled,
+      hasLastMessage: !!lastMessage,
+      lastMessage: lastMessage?.substring(0, 50),
+      lastPlayed: lastPlayedMessageRef.current?.substring(0, 50),
+      isDifferent: lastMessage !== lastPlayedMessageRef.current,
+    });
+
     if (ttsEnabled && lastMessage && lastMessage !== lastPlayedMessageRef.current) {
+      console.log('▶️ Auto-playing TTS...');
       lastPlayedMessageRef.current = lastMessage;
       handleTTS();
     }
   }, [lastMessage, ttsEnabled]);
+
+  // Load available voices for browser TTS (on mount)
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      const voices = window.speechSynthesis.getVoices();
+      console.log('🎙️ Available voices:', voices.length);
+      voices.slice(0, 3).forEach((voice, i) => {
+        console.log(`  ${i}: ${voice.name} (${voice.lang})`);
+      });
+    }
+  }, []);
+
+  // Load voices when they're ready (async on some browsers)
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        const voices = window.speechSynthesis.getVoices();
+        console.log('🎙️ Voices loaded/updated:', voices.length);
+      };
+    }
+  }, []);
 
   const handleVoiceInput = () => {
     if (!recognitionRef.current) {
@@ -112,59 +142,150 @@ export default function InputContainer({
     }
   };
 
-  const handleTTS = async () => {
-    if (!lastMessage) {
-      return;
-    }
+  // TIER 1: Browser TTS (instant, 0-500ms)
+  const playBrowserTTS = (text: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!('speechSynthesis' in window)) {
+        reject(new Error('Speech synthesis not supported'));
+        return;
+      }
 
-    // If already playing, stop
-    if (isPlaying && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-      return;
-    }
+      window.speechSynthesis.cancel();
 
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Try to find a natural female voice
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find((v) =>
+        v.name.toLowerCase().includes('female') ||
+        v.name.toLowerCase().includes('woman') ||
+        v.name.toLowerCase().includes('samantha') ||
+        v.name.toLowerCase().includes('victoria')
+      ) || voices[1] || voices[0];
+
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+        console.log('🎙️ Using voice:', femaleVoice.name);
+      }
+
+      utterance.onend = () => {
+        console.log('✅ Browser TTS ended');
+        resolve();
+      };
+
+      utterance.onerror = (event) => {
+        console.error('❌ Browser TTS error:', event.error);
+        reject(new Error(event.error));
+      };
+
+      console.log('▶️ Speaking (browser TTS)...');
+      window.speechSynthesis.speak(utterance);
+    });
+  };
+
+  // TIER 2: ElevenLabs streaming (background or fallback)
+  const playElevenLabsAudio = async (text: string): Promise<void> => {
     try {
-      setAudioLoading(true);
+      console.log('🔊 Fetching ElevenLabs audio...');
 
-      const response = await fetch('/api/tts', {
+      const response = await fetch('/api/tts-stream', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: lastMessage }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
       });
 
       if (!response.ok) {
         if (response.status === 403) {
-          try { alert('Your trial has ended. Please upgrade to use speech.'); } catch {}
+          alert('Your trial has ended. Please upgrade to use speech.');
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('vera:subscription_required'));
           }
         }
+        const errorText = await response.text();
+        console.error('❌ ElevenLabs API error:', errorText);
         throw new Error('Failed to generate speech');
       }
 
       const audioBlob = await response.blob();
+      console.log('🎵 ElevenLabs audio received:', audioBlob.size, 'bytes');
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      // Stop any existing audio
       if (audioRef.current) {
         audioRef.current.pause();
       }
 
       audioRef.current = new Audio(audioUrl);
+      audioRef.current.setAttribute('playsInline', 'true');
+      audioRef.current.setAttribute('webkit-playsinline', 'true');
+      audioRef.current.volume = 1.0;
+
       audioRef.current.onended = () => {
-        setIsPlaying(false);
+        console.log('✅ ElevenLabs playback ended');
         URL.revokeObjectURL(audioUrl);
       };
 
-      audioRef.current.play();
-      setIsPlaying(true);
+      audioRef.current.onerror = (e) => {
+        console.error('❌ Audio playback error:', e);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      console.log('▶️ Playing ElevenLabs audio...');
+      await audioRef.current.play();
     } catch (error) {
-      console.error('TTS error:', error);
-      alert('Failed to generate speech. Please try again.');
+      console.error('❌ ElevenLabs error:', error);
+      throw error;
+    }
+  };
+
+  // ORCHESTRATOR: Try browser TTS first, then ElevenLabs
+  const handleTTS = async () => {
+    console.log('🎤 handleTTS called (optimized), lastMessage:', lastMessage?.substring(0, 100));
+    
+    if (!lastMessage) {
+      console.log('❌ No lastMessage, returning');
+      return;
+    }
+
+    // If already playing, stop
+    if (isPlaying) {
+      console.log('⏹️ Stopping current audio');
+      window.speechSynthesis.cancel();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      console.log('🔊 Starting TTS (instant browser playback)...');
+      setAudioLoading(true);
+      setIsPlaying(true);
+
+      // TIER 1: INSTANT PLAYBACK with Browser Web Speech API
+      if ('speechSynthesis' in window) {
+        try {
+          await playBrowserTTS(lastMessage);
+          console.log('✅ Browser TTS playback completed');
+        } catch (error) {
+          console.warn('⚠️ Browser TTS failed, trying ElevenLabs:', error);
+          // Fall through to ElevenLabs
+          await playElevenLabsAudio(lastMessage);
+        }
+      } else {
+        // Browser doesn't support speech synthesis, use ElevenLabs only
+        console.log('ℹ️ Browser TTS not available, using ElevenLabs');
+        await playElevenLabsAudio(lastMessage);
+      }
+
+      setIsPlaying(false);
+    } catch (error) {
+      console.error('❌ TTS error:', error);
+      setIsPlaying(false);
+      alert('Failed to play audio. Please try again.');
     } finally {
       setAudioLoading(false);
     }
@@ -184,6 +305,13 @@ export default function InputContainer({
         name: attachedFile.name
       };
 
+      console.log('📤 Sending message with image:', {
+        hasText: !!finalMessage,
+        fileName: attachedFile.name,
+        fileType: attachedFile.type,
+        base64Length: base64.length,
+      });
+
       onSend(finalMessage, imageData);
       setAttachedFile(null);
       setImagePreview(null);
@@ -194,6 +322,7 @@ export default function InputContainer({
 
     // Text-only send
     if (finalMessage) {
+      console.log('📤 Sending text-only message:', finalMessage.substring(0, 50));
       onSend(finalMessage);
       setMessage('');
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -215,10 +344,18 @@ export default function InputContainer({
         return;
       }
       
+      console.log('📸 File selected:', file.name, file.type, 'Size:', file.size);
+      
       // Convert to base64 for preview and sending
       const reader = new FileReader();
+      reader.onerror = () => {
+        console.error('❌ FileReader error:', reader.error);
+        alert('Failed to read image file.');
+      };
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const base64 = reader.result as string;
+        console.log('✅ File read as base64, length:', base64.length);
+        setImagePreview(base64);
         setAttachedFile(file);
       };
       reader.readAsDataURL(file);
@@ -267,6 +404,8 @@ export default function InputContainer({
         borderTop: '1px solid var(--border-color)',
         padding: '16px 20px',
         paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+        width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       {/* Image Preview */}
@@ -319,10 +458,12 @@ export default function InputContainer({
       <div
         style={{
           display: 'flex',
-          gap: '12px',
-          alignItems: 'flex-end',
+          gap: '8px',
+          alignItems: 'center',
           maxWidth: '1200px',
           margin: '0 auto',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* Hidden File Input */}
@@ -339,8 +480,9 @@ export default function InputContainer({
           onClick={handleAttachClick}
           disabled={disabled}
           style={{
-            width: '44px',
-            height: '44px',
+            width: '40px',
+            height: '40px',
+            minWidth: '40px',
             borderRadius: '12px',
             background: attachedFile ? 'var(--orb-purple)' : 'var(--input-bg)',
             border: attachedFile ? '1px solid var(--orb-1)' : '1px solid var(--border-color)',
@@ -397,21 +539,22 @@ export default function InputContainer({
             rows={1}
             style={{
               width: '100%',
-              minHeight: '44px',
+              minHeight: '40px',
               maxHeight: '150px',
-              padding: '12px 16px',
+              padding: '9px 14px',
               background: 'var(--input-bg)',
               border: '1px solid var(--border-color)',
               borderRadius: '12px',
               color: 'var(--text-primary)',
-              fontSize: '15px',
-              lineHeight: '1.5',
+              fontSize: '14px',
+              lineHeight: '1.4',
               resize: 'none',
               outline: 'none',
               fontFamily: 'inherit',
               transition: 'all 0.2s ease',
               cursor: disabled ? 'not-allowed' : 'text',
               opacity: disabled ? 0.5 : 1,
+              boxSizing: 'border-box',
             }}
             onFocus={(e) => {
               if (!disabled) {
@@ -431,8 +574,9 @@ export default function InputContainer({
           onClick={handleVoiceInput}
           disabled={disabled}
           style={{
-            width: '44px',
-            height: '44px',
+            width: '40px',
+            height: '40px',
+            minWidth: '40px',
             borderRadius: '12px',
             background: isRecording 
               ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
@@ -485,8 +629,9 @@ export default function InputContainer({
           onClick={() => setTtsEnabled(!ttsEnabled)}
           disabled={disabled}
           style={{
-            width: '44px',
-            height: '44px',
+            width: '40px',
+            height: '40px',
+            minWidth: '40px',
             borderRadius: '12px',
             background: ttsEnabled 
               ? 'linear-gradient(135deg, var(--orb-1) 0%, var(--orb-3) 100%)'
@@ -551,8 +696,9 @@ export default function InputContainer({
           onClick={handleSend}
           disabled={disabled || !message.trim()}
           style={{
-            width: '44px',
-            height: '44px',
+            width: '40px',
+            height: '40px',
+            minWidth: '40px',
             borderRadius: '12px',
             background: message.trim() && !disabled
               ? 'linear-gradient(135deg, var(--orb-1) 0%, var(--orb-3) 100%)'

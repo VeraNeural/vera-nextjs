@@ -25,8 +25,16 @@ export function useAuth(): UseAuthReturn {
       setLoading(true);
       setError(null);
 
+      console.log('🔐 Fetching session from /api/auth/session');
       const response = await fetch('/api/auth/session');
+      console.log('🔐 Session response:', response.status, response.statusText);
+      
       const data = await response.json();
+      console.log('🔐 Session data:', {
+        authenticated: data.authenticated,
+        hasUser: !!data.user,
+        hasError: !!data.error,
+      });
 
       if (data.authenticated && data.user) {
         setUser(data.user);
@@ -38,8 +46,9 @@ export function useAuth(): UseAuthReturn {
         setSubscription(null);
       }
     } catch (err) {
-      console.error('Auth error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch session');
+      console.error('❌ Auth error:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch session';
+      setError(errorMsg);
       setUser(null);
       setTrial(null);
       setSubscription(null);
