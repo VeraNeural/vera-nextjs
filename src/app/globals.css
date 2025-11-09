@@ -527,3 +527,192 @@ body {
 .shimmer:hover::before {
   left: 100%;
 }
+
+/* ============================================
+   MOBILE RESPONSIVE MEDIA QUERIES
+   ============================================ */
+
+/* Mobile: < 640px */
+@media (max-width: 639px) {
+  /* Reduce padding on small screens */
+  body {
+    font-size: 15px;
+  }
+
+  /* Chat messages - wider on mobile */
+  [role="article"] {
+    max-width: 95%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Input container - full width */
+  input, textarea {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+
+  /* Buttons - ensure touch target 44px+ */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Sidebar is handled via JavaScript toggle */
+  /* Hide sidebar backdrop on mobile unless active */
+  aside {
+    /* Sidebar width adjusted via props */
+    width: 100vw;
+    max-width: 80vw;
+  }
+
+  /* Chat container padding */
+  [style*="padding: 24px 20px"] {
+    padding: 16px 12px !important;
+  }
+
+  /* Message bubbles - constrain width */
+  [style*="maxWidth: 85%"] {
+    max-width: 95% !important;
+  }
+
+  /* Header spacing */
+  header {
+    padding: 12px 16px !important;
+  }
+
+  /* Trial banner - stack properly */
+  [style*="flexDirection: row"] {
+    flex-direction: column !important;
+  }
+
+  /* Welcome state - adjust for small screens */
+  [style*="gap: 12px"] {
+    gap: 10px !important;
+  }
+
+  /* Quick action buttons - stack on mobile */
+  [style*="gridTemplateColumns: repeat(auto-fit"] {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+  }
+
+  /* Prevent bounce scrolling */
+  html, body {
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Safe area inset for notch devices */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Disable pull-to-refresh */
+  body {
+    overscroll-behavior: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Tablet: 640px - 1023px */
+@media (min-width: 640px) and (max-width: 1023px) {
+  /* Slightly larger text on tablet */
+  body {
+    font-size: 16px;
+  }
+
+  /* More breathing room */
+  [style*="padding: 24px 20px"] {
+    padding: 20px 16px !important;
+  }
+
+  /* Message bubbles - slightly wider */
+  [style*="maxWidth: 85%"] {
+    max-width: 85% !important;
+  }
+}
+
+/* Desktop: >= 1024px */
+@media (min-width: 1024px) {
+  /* Full layout with sidebar visible */
+  /* Sidebar stays visible */
+
+  /* Normal text size */
+  body {
+    font-size: 16px;
+  }
+
+  /* Message bubbles - balanced width */
+  [style*="maxWidth: 85%"] {
+    max-width: 85% !important;
+  }
+}
+
+/* Large screens: >= 1440px */
+@media (min-width: 1440px) {
+  /* Increase max widths for more content visibility */
+  [style*="maxWidth: 500px"] {
+    max-width: 600px !important;
+  }
+
+  /* More breathing room */
+  [style*="padding: 24px 20px"] {
+    padding: 32px 24px !important;
+  }
+}
+
+/* iOS Safari - specific fixes */
+@supports (-webkit-touch-callout: none) {
+  body {
+    /* iOS uses 100vh differently, use 100dvh */
+    height: 100dvh;
+  }
+
+  input, textarea {
+    /* Prevent iOS zoom on input focus */
+    font-size: 16px;
+  }
+
+  /* Safe area for notch/home indicator */
+  body {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Landscape mode - reduce height */
+@media (orientation: landscape) and (max-height: 500px) {
+  [style*="height: 100"] {
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  /* Reduce padding in landscape */
+  [style*="padding: 24px 20px"] {
+    padding: 12px 16px !important;
+  }
+
+  header {
+    min-height: auto !important;
+  }
+}
+
+/* High DPI screens - crisp text */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  header, aside, [style*="frozen"] {
+    display: none !important;
+  }
+}
+

@@ -205,10 +205,64 @@ export default function InputContainer({
       setIsPlaying(false);
     } catch (error) {
       console.error('❌ TTS error:', error);
-      setIsPlaying(false);
-      alert('Failed to play audio. Please try again.');
+      // Fallback to Web Speech API if ElevenLabs fails
+      console.log('🔄 Falling back to Web Speech API...');
+      try {
+        useBrowserTTS(lastMessage);
+      } catch (fallbackError) {
+        console.error('❌ Both TTS methods failed:', fallbackError);
+        alert('Failed to play audio. Please try again.');
+        setIsPlaying(false);
+      }
     } finally {
       setAudioLoading(false);
+    }
+  };
+
+  // Fallback: Use browser's native Web Speech API
+  const useBrowserTTS = (text: string) => {
+    if (!('speechSynthesis' in window)) {
+      console.warn('⚠️ speechSynthesis not available in this browser');
+      return;
+    }
+
+    try {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Configure utterance
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Try to use a higher quality voice
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        // Find a female voice if available, otherwise use first voice
+        const preferredVoice = voices.find((v) => v.name.includes('Google UK English Female'))
+          || voices.find((v) => v.lang === 'en-US')
+          || voices[0];
+        utterance.voice = preferredVoice;
+      }
+
+      // Handle completion
+      utterance.onend = () => {
+        console.log('✅ Browser TTS playback ended');
+        setIsPlaying(false);
+      };
+
+      utterance.onerror = (event) => {
+        console.error('❌ Browser TTS error:', event.error);
+        setIsPlaying(false);
+      };
+
+      console.log('▶️ Playing audio via Web Speech API...');
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.error('❌ Browser TTS initialization error:', error);
+      throw error;
     }
   };
 
