@@ -1,10 +1,10 @@
 /**
- * VERA v4.1 - Main Exports
+ * VERA v5.0 - Main Exports
  * 
- * Revolutionary nervous system companion AI architecture.
+ * Revolutionary nervous system companion AI architecture with biometric integration.
  * 
  * @author VeraNeural
- * @date 2025-11-08
+ * @date 2025-11-08 21:57:59 UTC
  */
 
 // Core Engine
@@ -49,18 +49,7 @@ export { analyzeDecodeRequest, generateDecodePrompt } from './decode-mode';
 // Conversational Mode
 export { generateConversationalPrompt } from './conversational-mode';
 
-// Biometric Integration
-export { 
-  analyzeBiometrics, 
-  mergeBiometricWithTextAnalysis 
-} from './biometric-integration';
-
-export type { 
-  BiometricReading, 
-  BiometricAnalysis 
-} from './biometric-integration';
-
 // Version info
-export const VERA_VERSION = '4.1.0';
-export const VERA_BUILD_DATE = '2025-11-08';
+export const VERA_VERSION = '5.0.0';
+export const VERA_BUILD_DATE = '2025-11-08 21:57:59 UTC';
 export const VERA_ARCHITECT = 'VeraNeural';

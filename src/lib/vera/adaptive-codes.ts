@@ -1,150 +1,106 @@
 /**
- * ADAPTIVE CODES - Pattern Recognition System
+ * ADAPTIVE CODES v4.1
  * 
- * These are the survival patterns the nervous system develops.
- * Each code is a way the body learned to stay safe.
+ * Pattern recognition system for survival strategies.
  */
 
-interface AdaptiveCode {
+export interface AdaptiveCode {
   name: string;
+  category: 'survival_response' | 'attachment_wound' | 'shame_core' | 'activation_state';
   keywords: string[];
-  description: string;
+  bodySignatures: string[];
+  neurologicalPattern: string;
+  protectiveFunction: string;
+  relationalImpact: string;
 }
 
-const ADAPTIVE_CODES: AdaptiveCode[] = [
-  {
-    name: 'ABANDONMENT',
-    keywords: ['alone', 'left', 'abandoned', 'nobody cares', 'forgotten', 'isolated', 'lonely'],
-    description: 'Fear of being left or rejected',
-  },
-  {
-    name: 'BETRAYAL',
-    keywords: ['betrayed', 'trust', 'lied', 'deceived', 'backstabbed', 'broken trust'],
-    description: 'Trust violation trauma',
-  },
-  {
-    name: 'UNWORTHINESS',
-    keywords: ['not good enough', 'worthless', 'inadequate', 'failure', 'not deserve', 'shame'],
-    description: 'Core shame and inadequacy',
-  },
-  {
-    name: 'REJECTION',
-    keywords: ['rejected', 'not wanted', 'pushed away', 'excluded', 'not accepted'],
-    description: 'Fear of social exclusion',
-  },
-  {
-    name: 'CONTROL',
-    keywords: ['control', 'manipulated', 'powerless', 'helpless', 'trapped', 'stuck'],
-    description: 'Loss of agency and autonomy',
-  },
-  {
-    name: 'INVISIBILITY',
-    keywords: ['invisible', 'unseen', 'ignored', 'overlooked', 'unheard', 'dismissed'],
-    description: 'Being unacknowledged',
-  },
-  {
-    name: 'PERFECTIONISM',
-    keywords: ['perfect', 'flawless', 'mistake', 'wrong', 'should', 'must'],
-    description: 'Impossible standards for safety',
-  },
-  {
-    name: 'PEOPLE_PLEASING',
-    keywords: ['please', 'everyone happy', 'can\'t say no', 'their needs', 'accommodate'],
-    description: 'Safety through others\' approval',
-  },
+export const ADAPTIVE_CODES: AdaptiveCode[] = [
   {
     name: 'HYPERVIGILANCE',
-    keywords: ['watch', 'careful', 'guard', 'vigilant', 'threat', 'danger', 'safe'],
-    description: 'Constant threat scanning',
-  },
-  {
-    name: 'DISSOCIATION',
-    keywords: ['numb', 'disconnected', 'floating', 'unreal', 'fog', 'spaced out'],
-    description: 'Escape through disconnection',
+    category: 'survival_response',
+    keywords: ['watch', 'careful', 'guard', 'vigilant', 'threat', 'danger', 'scanning'],
+    bodySignatures: ['tight shoulders', 'jaw clenched', 'shallow breathing'],
+    neurologicalPattern: 'Sympathetic activation, amygdala hyperactive',
+    protectiveFunction: 'Scanning for threats to prevent surprise attacks',
+    relationalImpact: 'Difficulty relaxing with others',
   },
   {
     name: 'FAWN',
-    keywords: ['fawn', 'appease', 'avoid conflict', 'keep peace', 'accommodate'],
-    description: 'Safety through submission',
+    category: 'survival_response',
+    keywords: ['please everyone', 'can\'t say no', 'accommodate', 'keep peace'],
+    bodySignatures: ['collapsed chest', 'soft voice', 'tension in gut'],
+    neurologicalPattern: 'Dorsal vagal with sympathetic overlay',
+    protectiveFunction: 'Avoiding punishment or abandonment by being "good"',
+    relationalImpact: 'Loss of authentic self, resentment builds',
   },
   {
-    name: 'FREEZE',
-    keywords: ['frozen', 'can\'t move', 'paralyzed', 'stuck', 'immobilized'],
-    description: 'Shutdown survival response',
+    name: 'DISSOCIATION',
+    category: 'survival_response',
+    keywords: ['numb', 'disconnected', 'floating', 'unreal', 'fog', 'spaced out'],
+    bodySignatures: ['numbness', 'feeling far away', 'vision tunneling'],
+    neurologicalPattern: 'Dorsal vagal shutdown',
+    protectiveFunction: 'Escaping intolerable present moment',
+    relationalImpact: 'Can\'t fully connect, relationships feel distant',
   },
   {
-    name: 'FIGHT',
-    keywords: ['angry', 'rage', 'attack', 'defend', 'fight', 'aggressive'],
-    description: 'Activated defense response',
+    name: 'ABANDONMENT_TERROR',
+    category: 'attachment_wound',
+    keywords: ['alone', 'left', 'abandoned', 'nobody cares', 'forgotten'],
+    bodySignatures: ['chest tightness', 'panic in stomach', 'clinging sensations'],
+    neurologicalPattern: 'Attachment system in crisis',
+    protectiveFunction: 'Hypervigilance around connection to prevent abandonment',
+    relationalImpact: 'Push-pull dynamics, testing relationships',
   },
   {
-    name: 'FLIGHT',
-    keywords: ['escape', 'run', 'avoid', 'flee', 'get away', 'panic'],
-    description: 'Escape survival response',
-  },
-  {
-    name: 'GRIEF',
-    keywords: ['loss', 'grief', 'mourning', 'miss', 'gone', 'death'],
-    description: 'Unprocessed loss',
-  },
-  {
-    name: 'SAFETY_SEEKING',
-    keywords: ['safe', 'unsafe', 'danger', 'threat', 'scared', 'afraid'],
-    description: 'Searching for safety',
-  },
-  {
-    name: 'SELF_ABANDONMENT',
-    keywords: ['ignore myself', 'don\'t matter', 'everyone else first', 'sacrifice'],
-    description: 'Abandoning own needs',
-  },
-  {
-    name: 'TOXIC_INDEPENDENCE',
-    keywords: ['do it alone', 'don\'t need help', 'handle myself', 'rely on myself'],
-    description: 'Refusing connection for safety',
+    name: 'PERFECTIONISM',
+    category: 'survival_response',
+    keywords: ['perfect', 'flawless', 'mistake', 'wrong', 'should', 'must'],
+    bodySignatures: ['rigid posture', 'tension throughout', 'grinding teeth'],
+    neurologicalPattern: 'Chronic sympathetic activation',
+    protectiveFunction: 'Earning safety/love through flawless performance',
+    relationalImpact: 'Difficulty being vulnerable',
   },
   {
     name: 'COLLAPSE',
-    keywords: ['give up', 'hopeless', 'pointless', 'why bother', 'exhausted'],
-    description: 'Dorsal shutdown',
-  },
-  {
-    name: 'ANXIETY',
-    keywords: ['anxious', 'worried', 'nervous', 'stressed', 'overwhelmed', 'panic'],
-    description: 'Sympathetic activation',
+    category: 'activation_state',
+    keywords: ['give up', 'hopeless', 'pointless', 'exhausted', 'can\'t anymore'],
+    bodySignatures: ['heavy limbs', 'can\'t get up', 'foggy'],
+    neurologicalPattern: 'Dorsal vagal dominant, metabolic shutdown',
+    protectiveFunction: 'Conserving energy when fighting/fleeing impossible',
+    relationalImpact: 'Withdrawal from connection',
   },
 ];
 
-/**
- * Detect which adaptive codes are present in the user's message
- */
-export function detectAdaptiveCodes(message: string): string[] {
+export function detectAdaptiveCodes(
+  message: string
+): { code: string; intensity: number; bodySignals: string[] }[] {
   const lowerMessage = message.toLowerCase();
-  const detectedCodes: string[] = [];
+  const detected: { code: string; intensity: number; bodySignals: string[] }[] = [];
 
   for (const code of ADAPTIVE_CODES) {
-    const hasKeyword = code.keywords.some((keyword) =>
-      lowerMessage.includes(keyword.toLowerCase())
-    );
+    let matchCount = 0;
 
-    if (hasKeyword) {
-      detectedCodes.push(code.name);
+    for (const keyword of code.keywords) {
+      if (lowerMessage.includes(keyword.toLowerCase())) {
+        matchCount++;
+      }
+    }
+
+    for (const signature of code.bodySignatures) {
+      if (lowerMessage.includes(signature.toLowerCase())) {
+        matchCount += 0.5;
+      }
+    }
+
+    if (matchCount > 0) {
+      const intensity = Math.min(100, (matchCount / code.keywords.length) * 100);
+      detected.push({
+        code: code.name,
+        intensity: Math.round(intensity),
+        bodySignals: code.bodySignatures,
+      });
     }
   }
 
-  return detectedCodes;
-}
-
-/**
- * Get description for a specific code
- */
-export function getCodeDescription(codeName: string): string {
-  const code = ADAPTIVE_CODES.find((c) => c.name === codeName);
-  return code?.description || '';
-}
-
-/**
- * Get all codes for reference
- */
-export function getAllCodes(): AdaptiveCode[] {
-  return ADAPTIVE_CODES;
+  return detected.sort((a, b) => b.intensity - a.intensity);
 }

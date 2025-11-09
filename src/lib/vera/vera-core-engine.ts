@@ -21,8 +21,6 @@ import {
   ConsentBoundaries,
   ConversationMessage,
   VERAResponse,
-  BiometricReading,
-  BiometricAnalysis,
 } from './types';
 
 import { generateConversationalPrompt } from './conversational-mode';
@@ -46,10 +44,6 @@ import {
   QuantumEmotionalState,
 } from './quantum-states';
 import { createDefaultUserProfile } from './memory-architecture';
-import {
-  analyzeBiometrics,
-  mergeBiometricWithTextAnalysis,
-} from './biometric-integration';
 import { analyzeVoiceForNervousSystem, generateVoiceAwareResponse } from './voice-analysis';
 
 // ============================================================================
@@ -205,152 +199,6 @@ export class VERACoreEngine {
         adaptiveCodes,
         quantumState,
         quantumStateDescription,
-      },
-      metadata: {
-        timestamp: new Date(),
-        responseTime,
-      },
-      suggestions: {
-        regulationTechniques,
-        followUpPrompts,
-      },
-      metaLearning: {
-        interventionOffered,
-        shouldTrack: true,
-      },
-    };
-  }
-
-  /**
-   * Process message with biometric data integration
-   */
-  async processMessageWithBiometrics(
-    userMessage: string,
-    biometricReading?: BiometricReading
-  ): Promise<VERAResponse> {
-    const startTime = Date.now();
-
-    // STEP 1: CRISIS DETECTION (highest priority)
-    const crisisDetection = detectCrisis(userMessage);
-    if (crisisDetection.isCrisis) {
-      return this.handleCrisisResponse(userMessage, crisisDetection, startTime);
-    }
-
-    // STEP 2: DETECT ADAPTIVE CODES & PATTERNS (from text)
-    const adaptiveCodes = detectAdaptiveCodes(userMessage);
-
-    // STEP 3: CALCULATE QUANTUM STATE (from text)
-    const quantumState = calculateQuantumState(
-      adaptiveCodes,
-      this.session.conversationHistory
-    );
-    const textBasedState = quantumState.primaryState;
-    const textConfidence = adaptiveCodes.length > 0 
-      ? adaptiveCodes[0].intensity 
-      : 50;
-
-    // STEP 4: ANALYZE BIOMETRIC DATA (if provided)
-    let biometricAnalysis: BiometricAnalysis | undefined;
-    let finalState = textBasedState;
-    let finalConfidence = textConfidence;
-
-    if (biometricReading) {
-      // Get historical biometric data from user profile
-      const historicalData = this.session.userProfile.biologicalMarkers 
-        ? [] // Would pull from stored readings
-        : undefined;
-
-      biometricAnalysis = analyzeBiometrics(biometricReading, historicalData);
-
-      // Merge biometric + text analysis
-      const merged = mergeBiometricWithTextAnalysis(
-        biometricAnalysis,
-        textBasedState,
-        textConfidence
-      );
-
-      finalState = merged.finalState;
-      finalConfidence = merged.confidence;
-
-      console.log(`[VERA Biometric] Text detected: ${textBasedState}, Biometric detected: ${biometricAnalysis?.nervousSystemState}`);
-      console.log(`[VERA Biometric] Final state: ${finalState} (${merged.method})`);
-      console.log(`[VERA Biometric] Indicators:`, biometricAnalysis?.indicators);
-
-      // Update quantum state with biometric data
-      quantumState.primaryState = finalState;
-      if (biometricAnalysis?.indicators) {
-        quantumState.bodySignals.push(...biometricAnalysis.indicators);
-      }
-    }
-
-    const quantumStateDescription = this.getQuantumStateDescription(quantumState);
-
-    // STEP 5: CHECK FOR DECODE REQUEST
-    const decodeRequest = analyzeDecodeRequest(userMessage);
-
-    let mode: 'conversational' | 'decode' = 'conversational';
-    let prompt: string;
-
-    if (decodeRequest.isDecodeRequest) {
-      mode = 'decode';
-      prompt = generateDecodePrompt(
-        userMessage,
-        this.session.conversationHistory,
-        adaptiveCodes,
-        quantumState,
-        decodeRequest,
-        this.session.userProfile.name
-      );
-      this.session.sessionMetrics.decodeRequests++;
-    } else {
-      prompt = generateConversationalPrompt(
-        userMessage,
-        this.session.conversationHistory,
-        this.session.userProfile,
-        adaptiveCodes,
-        quantumStateDescription,
-        new Date()
-      );
-    }
-
-    // STEP 6: CALL AI PROVIDER
-    const aiResponse = await this.aiProvider(prompt);
-
-    // STEP 7: UPDATE CONVERSATION HISTORY
-    this.addToHistory('user', userMessage, {
-      adaptiveCodes: adaptiveCodes.map((c) => c.code),
-      quantumState: quantumStateDescription,
-      mode,
-    });
-
-    this.addToHistory('assistant', aiResponse, {
-      adaptiveCodes: adaptiveCodes.map((c) => c.code),
-      quantumState: quantumStateDescription,
-      mode,
-    });
-
-    // STEP 8: GENERATE REGULATION SUGGESTIONS
-    const regulationTechniques = getRegulationSuggestions(quantumStateDescription);
-
-    // STEP 9: GENERATE FOLLOW-UP PROMPTS
-    const followUpPrompts = this.generateFollowUpPrompts(mode, quantumState);
-
-    // STEP 10: UPDATE SESSION METRICS
-    const responseTime = Date.now() - startTime;
-    this.updateSessionMetrics(responseTime, quantumState.primaryState);
-
-    // STEP 11: EXTRACT INTERVENTION
-    const interventionOffered = this.extractIntervention(aiResponse);
-
-    // STEP 12: BUILD AND RETURN RESPONSE
-    return {
-      content: aiResponse,
-      mode,
-      detectedPatterns: {
-        adaptiveCodes,
-        quantumState,
-        quantumStateDescription,
-        biometricAnalysis, // INCLUDE BIOMETRIC DATA
       },
       metadata: {
         timestamp: new Date(),
@@ -743,9 +591,4 @@ export function resumeVERASession(
   console.log(`[VERA Core] Resumed session ${sessionData.sessionId}`);
   return engine;
 }
-
-// ============================================================================
-// EXAMPLE USAGE
-// ============================================================================
-
 /**
