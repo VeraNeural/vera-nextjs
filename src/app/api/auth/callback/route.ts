@@ -99,6 +99,20 @@ export async function GET(request: NextRequest) {
     sessionData = data?.session;
     console.log('✅ Code exchanged for user:', userData?.email);
     console.log('Session created:', sessionData ? 'YES' : 'NO');
+
+    // CRITICAL: Explicitly set the session for OAuth to ensure cookies are written
+    if (sessionData) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: sessionData.access_token,
+        refresh_token: sessionData.refresh_token,
+      });
+      
+      if (sessionError) {
+        console.error('❌ Failed to set OAuth session:', sessionError);
+      } else {
+        console.log('✅ OAuth session explicitly set');
+      }
+    }
   }
   else {
     console.error('❌ No auth parameters found');

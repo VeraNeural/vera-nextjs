@@ -5,25 +5,40 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function SocialLogin() {
   const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const signInWithGoogle = async () => {
     try {
+      setError(null);
       setLoadingGoogle(true);
       const supabase = createClient();
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      
+      // Get origin - prefer environment variable for consistency, fall back to window
+      const origin = process.env.NEXT_PUBLIC_APP_URL || 
+                     (typeof window !== 'undefined' ? window.location.origin : '');
+      
+      if (!origin) {
+        throw new Error('Unable to determine origin for OAuth callback');
+      }
+
+      console.log('🔐 Starting Google OAuth:', {
+        redirectTo: `${origin}/api/auth/callback`,
+      });
+
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${origin}/api/auth/callback`,
           queryParams: {
-            // Force account chooser for multi-account users
             prompt: 'select_account',
           },
         },
       });
     } catch (e) {
-      console.error('Google OAuth error:', e);
-      alert('Unable to start Google sign-in. Please try again.');
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      console.error('❌ Google OAuth error:', errorMsg, e);
+      setError(errorMsg || 'Unable to start Google sign-in');
+      // Don't dismiss error automatically - let user see it
     } finally {
       setLoadingGoogle(false);
     }
@@ -45,6 +60,12 @@ export default function SocialLogin() {
         </svg>
         <span>{loadingGoogle ? 'Connecting…' : 'Continue with Google'}</span>
       </button>
+
+      {error && (
+        <div className="mt-3 text-center text-sm text-red-300 py-3 px-4 bg-red-500/20 rounded-xl border-2 border-red-400/30 backdrop-blur-sm">
+          {error}
+        </div>
+      )}
 
       <div className="flex items-center gap-4 my-4">
         <div className="flex-1 h-px bg-white/20" />
