@@ -146,7 +146,13 @@ ${userMessage}
 YOUR RESPONSE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Be real. Be you. Be helpful. No performance. Just genuine connection.`;
+⚠️ CRITICAL: Do NOT include "USER:", "VERA:", or any labels in your response.
+⚠️ CRITICAL: Only your actual message - no meta-formatting or role labels.
+⚠️ CRITICAL: The labels above are CONTEXT ONLY.
+
+Be real. Be you. Be helpful. No performance. Just genuine connection. 
+
+Only your words. No labels.`;
 }
 
 /**
