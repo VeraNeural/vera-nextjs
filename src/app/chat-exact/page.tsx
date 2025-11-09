@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
@@ -10,12 +10,32 @@ import WelcomeStateExact from '@/components/chat/WelcomeStateExact';
 import InputContainer from '@/components/chat/InputContainer';
 import { useChat } from '@/hooks/useChat';
 import { useTrial } from '@/hooks/useTrial';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userName, setUserName] = useState<string>('');
   
   const { messages, loading, sendMessage } = useChat();
   const { trial, loading: trialLoading } = useTrial();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    // Get user name from auth or profile
+    const loadUserName = async () => {
+      try {
+        const response = await fetch('/api/auth/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setUserName(data.user?.name || '');
+        }
+      } catch (error) {
+        console.error('Error loading user name:', error);
+      }
+    };
+    
+    loadUserName();
+  }, []);
 
   const handleSend = async (content: string) => {
     await sendMessage(content);
@@ -107,6 +127,7 @@ export default function ChatPage() {
             isTyping={loading}
             onSaveMessage={handleSaveMessage}
             onDeleteMessage={handleDeleteMessage}
+            userName={userName}
           />
         )}
 

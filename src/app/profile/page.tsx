@@ -249,7 +249,7 @@ export default function ProfilePage() {
                             color: 'white',
                           }}
                         >
-                          {email.charAt(0).toUpperCase()}
+                          {name ? name.charAt(0).toUpperCase() : email.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <p className="font-medium" style={{ color: 'var(--text-primary)' }}>

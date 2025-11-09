@@ -17,13 +17,15 @@ interface ChatContainerProps {
   isTyping?: boolean;
   onSaveMessage?: (id: string) => void;
   onDeleteMessage?: (id: string) => void;
+  userName?: string;
 }
 
 export default function ChatContainer({ 
   messages, 
   isTyping = false,
   onSaveMessage,
-  onDeleteMessage
+  onDeleteMessage,
+  userName
 }: ChatContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -89,7 +91,7 @@ export default function ChatContainer({
                   boxShadow: '0 4px 12px rgba(100, 181, 246, 0.3)',
                 }}
               >
-                U
+                {userName ? userName.charAt(0).toUpperCase() : 'U'}
               </div>
             )}
           </div>
