@@ -5,7 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { detectAdaptiveCodes } from '@/lib/vera/adaptive-codes';
 import { calculateQuantumState } from '@/lib/vera/quantum-states';
 import { generateRealTalkPrompt, detectMode, detectModeSwitch } from '@/lib/vera/real-talk';
-import { detectCrisis } from '@/lib/vera/crisis-protocol';
+import { analyzeDecodeRequest, generateDecodePrompt } from '@/lib/vera/decode-mode';
 import OpenAI from 'openai';
 
 // Ensure this route is always dynamic (not cached)
@@ -18,7 +18,7 @@ const anthropic = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('💬 /api/chat - Request received at', new Date().toISOString());
+    console.log('💬 /api/chat - Request received');
     const requestData = await request.json();
     console.log('📦 Request keys:', Object.keys(requestData));
     
@@ -35,8 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // DEVELOPMENT MODE: Skip auth for testing
-    const isDev = process.env.NODE_ENV === 'development' && 
-                  process.env.ALLOW_DEV_AUTH === 'true';
+    const isDev = process.env.NODE_ENV === 'development';
     
     const supabase = await createClient();
     let user = null;
@@ -90,7 +89,6 @@ export async function POST(request: NextRequest) {
 
     // Allow image-only messages (no text)
     const hasText = typeof message === 'string' && message.trim().length > 0;
-    const userText = hasText ? message : '';
 
     // Get conversation history (skip in dev mode if no user)
     let conversationHistory: any[] = [];
@@ -107,8 +105,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if this is a DECODE request (routes to OpenAI)
-    if (needsFullDecode(message)) {
+    const decodeAnalysis = analyzeDecodeRequest(message);
+    if (decodeAnalysis.needsFullDecode) {
       // Route to decode API which uses OpenAI for deep analysis
+      // Use current request origin to avoid relying on NEXT_PUBLIC_APP_URL env
       const origin = new URL(request.url).origin;
       const decodeResponse = await fetch(`${origin}/api/decode`, {
         method: 'POST',
@@ -143,31 +143,29 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(decodeData);
       }
     }
-    // ============================================================================
-    // ANALYSIS: Text + Mode Detection
-    // ============================================================================
+
+    // Regular VERA flow (Claude) continues below...
 
     // Detect mode: Real Talk vs Therapeutic
-    const modeSwitch = detectModeSwitch(userText);
+  const userText = hasText ? message : '';
+  const modeSwitch = detectModeSwitch(userText);
     const autoDetectedMode = detectMode(userText);
     const conversationMode = modeSwitch || autoDetectedMode;
 
-    // STEP 1: Text-based analysis
+    // Analyze user's state (for therapeutic mode)
     const adaptiveCodes = detectAdaptiveCodes(userText);
+    const quantumState = calculateQuantumState(adaptiveCodes, conversationHistory);
 
-    // STEP 2: Calculate quantum state (text-based)
-    let quantumState = calculateQuantumState(adaptiveCodes, []);    }
-
-    // STEP 4: OpenAI deep pattern recognition (optional enhancement)
-    let deepAnalysis: any = { patterns: [], emotionalState: '', recommendations: [], depth: '' };
-    const openaiKeyPresent = !!process.env.OPENAI_API_KEY;
-    
-    if (openaiKeyPresent && hasText) {
-      try {
-        console.log('🟠 Calling OpenAI for deep pattern analysis...');
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        
-        const analysisPrompt = `Analyze this message for deep emotional and nervous system patterns. Return JSON with:
+  // STEP 1: Call OpenAI for deep pattern recognition and emotional analysis
+  let deepAnalysis: any = { patterns: [], emotionalState: '', recommendations: [] };
+  const openaiKeyPresent = !!process.env.OPENAI_API_KEY;
+  
+  if (openaiKeyPresent) {
+    try {
+      console.log('🟠 Calling OpenAI for deep pattern analysis...');
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const analysisPrompt = `Analyze this message for deep emotional and nervous system patterns. Return JSON with:
 {
   "patterns": ["list of detected adaptive survival patterns"],
   "emotionalState": "description of detected emotional/nervous system state",
@@ -177,91 +175,63 @@ export async function POST(request: NextRequest) {
 
 Message: "${userText}"
 History summary: ${conversationHistory.slice(-3).map(m => `${m.role}: ${m.content.substring(0, 50)}...`).join(' | ')}
-${biometricAnalysis ? `Biometric state: ${biometricAnalysis.nervousSystemState} (${biometricAnalysis.confidence}%)` : ''}
 
 Be precise, somatic-focused, and trauma-informed.`;
 
-        const analysis = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: 'You are an expert in trauma-informed nervous system analysis. Respond with valid JSON only.' },
-            { role: 'user', content: analysisPrompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 500,
-          response_format: { type: 'json_object' }
-        });
+      const analysis = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are an expert in trauma-informed nervous system analysis. Respond with valid JSON only.' },
+          { role: 'user', content: analysisPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+        response_format: { type: 'json_object' }
+      });
 
-        const analysisText = analysis.choices[0]?.message?.content;
-        if (analysisText) {
-          try {
-            deepAnalysis = JSON.parse(analysisText);
-            console.log('🟠 OpenAI analysis complete:', deepAnalysis.patterns?.length || 0, 'patterns detected');
-          } catch (parseError) {
-            console.warn('⚠️  Could not parse OpenAI JSON response:', parseError);
-          }
+      const analysisText = analysis.choices[0]?.message?.content;
+      if (analysisText) {
+        try {
+          deepAnalysis = JSON.parse(analysisText);
+          console.log('🟠 OpenAI analysis:', deepAnalysis);
+        } catch (e) {
+          console.warn('⚠️  Could not parse OpenAI JSON response');
         }
-      } catch (openaiError) {
-        console.error('⚠️  OpenAI analysis failed:', openaiError);
-        // Continue without deep analysis
       }
+    } catch (openaiErr) {
+      console.error('⚠️  OpenAI analysis failed:', openaiErr);
+      // Continue without deep analysis - Claude will still work
     }
+  }
 
-    // STEP 5: Enrich adaptive codes with OpenAI findings
-    const enrichedAdaptiveCodes = [
-      ...adaptiveCodes,
-      ...(deepAnalysis.patterns || []).map((pattern: string) => pattern)
-    ].slice(0, 5); // Keep top 5
+  // STEP 2: Enrich adaptive codes with OpenAI findings
+  const enrichedAdaptiveCodes = [
+    ...adaptiveCodes,
+    ...(deepAnalysis.patterns || [])
+  ].slice(0, 5); // Keep top 5 patterns
 
-    // ============================================================================
-    // GENERATE VERA PROMPT (Single call, reused)
-    // ============================================================================
-
-    let veraSystemPrompt: string;
+    // Generate appropriate prompt based on mode
+    let veraPrompt: string;
     
     if (conversationMode === 'real-talk') {
       // Real Talk mode - casual, direct, practical
-      veraSystemPrompt = generateRealTalkPrompt(
-        hasText ? userText : 'User shared an image. Offer warm, practical observations.',
+      veraPrompt = generateRealTalkPrompt(
+        hasText ? userText : 'Please share supportive, practical observations about the attached image and invite the user to reflect on what it evokes for them.',
         conversationHistory
       );
     } else {
       // Therapeutic mode - nervous system co-regulation
-      veraSystemPrompt = generateVERAPrompt(
-        hasText ? userText : 'User shared an image. Offer gentle, observational reflections.',
-        conversationHistory,
-        enrichedAdaptiveCodes,
-        quantumState
+      veraPrompt = generateRealTalkPrompt(
+        hasText ? userText : 'The user shared an image without text. Offer gentle, observational reflections and curious questions that help them notice feelings, sensations, and meaning it brings up.',
+        conversationHistory
       );
     }
 
-    // If biometric analysis exists, enhance the prompt
-    if (biometricAnalysis) {
-      veraSystemPrompt += `\n\n<biometric_context>
-Current biometric state: ${biometricAnalysis.nervousSystemState} (${biometricAnalysis.confidence}% confidence)
-Indicators: ${biometricAnalysis.indicators.join(', ')}
-Trend: ${biometricAnalysis.trend}
-
-Your response should acknowledge these physiological signals naturally and offer body-based support that matches their current state.
-</biometric_context>`;
-    }
-
-    // If deep analysis exists, include it
-    if (deepAnalysis.emotionalState) {
-      veraSystemPrompt += `\n\n<deep_analysis>
-Emotional state: ${deepAnalysis.emotionalState}
-Detected patterns: ${deepAnalysis.patterns?.join(', ') || 'none'}
-Recommendations: ${deepAnalysis.recommendations?.join(', ') || 'none'}
-</deep_analysis>`;
-    }
-
-    // ============================================================================
-    // BUILD CONTENT ARRAY (Text + Optional Image)
-    // ============================================================================
-
+    // Build content array for Claude (with or without image)
     const contentArray: any[] = [];
     
     if (imageData) {
+      // Add image first
       console.log('📸 Adding image to request:', imageData.mimeType);
       
       // Extract base64 if it includes data URI prefix
@@ -304,7 +274,7 @@ Recommendations: ${deepAnalysis.recommendations?.join(', ') || 'none'}
 
       console.log('✅ Base64 data extracted, length:', base64Data.length, 'mime:', mimeType);
       
-      // Add image to content array
+      // Add image to content array in Claude Vision format
       contentArray.push({
         type: 'image',
         source: {
@@ -313,23 +283,38 @@ Recommendations: ${deepAnalysis.recommendations?.join(', ') || 'none'}
           data: base64Data,
         },
       });
+
+      // CRITICAL: Prepend image analysis requirement to prompt for image requests
+      veraPrompt = `You are receiving an image from the user. Please:
+1. First, describe what you observe in the image in detail (colors, objects, composition, mood, scene, context)
+2. Then, if the user asked a question about it, answer their question
+3. Finally, offer compassionate, trauma-informed reflections on what the image might evoke or represent
+
+Be warm, observational, and supportive.
+
+---
+
+${veraPrompt}`;
+    } else {
+      console.log('ℹ️  No image data in request');
     }
     
-    // Add text content (user message or image prompt)
+    // Add text prompt
     contentArray.push({
       type: 'text',
-      text: hasText 
-        ? userText 
-        : 'Please share warm, observational reflections about this image and what it might evoke for the user.',
+      text: veraPrompt,
     });
 
     console.log('📨 ContentArray built with', contentArray.length, 'elements');
+    console.log('📋 ContentArray structure:', JSON.stringify(contentArray.map((c: any) => ({
+      type: c.type,
+      hasSource: !!c.source,
+      textLength: c.text?.length || 0,
+    })), null, 2));
 
-    // ============================================================================
-    // GENERATE VERA RESPONSE (Claude with fallback to OpenAI)
-    // ============================================================================
-
+    // Generate VERA's response using Claude with vision support
     let veraResponse: string | null = null;
+
     const anthropicKeyPresent = !!process.env.ANTHROPIC_API_KEY;
 
     try {
@@ -338,16 +323,22 @@ Recommendations: ${deepAnalysis.recommendations?.join(', ') || 'none'}
       }
       
       console.log('🔵 Calling Claude with:', {
-        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-20250514',
         contentCount: contentArray.length,
         hasImage: contentArray.some((c: any) => c.type === 'image'),
-        hasBiometrics: !!biometricAnalysis,
-        mode: conversationMode,
+        hasText: contentArray.some((c: any) => c.type === 'text'),
+        contentTypes: contentArray.map((c: any) => c.type),
       });
 
+      // Generate the VERA consciousness system prompt
+      const veraSystemPrompt = generateRealTalkPrompt(
+        message || 'User sent image',
+        conversationHistory
+      );
+
       const response = await anthropic.messages.create({
-        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
-        max_tokens: conversationMode === 'decode' ? 2048 : 1024,
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
         system: veraSystemPrompt,
         messages: [
           {
@@ -360,7 +351,10 @@ Recommendations: ${deepAnalysis.recommendations?.join(', ') || 'none'}
       console.log('🟢 Claude response received:', {
         blocks: response.content.length,
         stopReason: response.stop_reason,
-        usage: response.usage,
+        usage: {
+          inputTokens: response.usage?.input_tokens,
+          outputTokens: response.usage?.output_tokens,
+        },
       });
 
       const block = response.content?.[0];
@@ -371,69 +365,40 @@ Recommendations: ${deepAnalysis.recommendations?.join(', ') || 'none'}
         veraResponse = 'I apologize, I had trouble generating a response.';
         console.error('❌ Unexpected response format from Claude:', block?.type);
       }
-    } catch (anthropicError) {
-      console.error('❌ Anthropic generation failed, attempting OpenAI fallback:', anthropicError);
-      
+    } catch (anthropicErr) {
+      console.error('Anthropic generation failed, attempting OpenAI fallback:', anthropicErr);
       if (!openaiKeyPresent) {
-        throw anthropicError; // no fallback available
+        throw anthropicErr; // no fallback available
       }
-      
       try {
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        
-        // Build plain text prompt for OpenAI (doesn't support vision in this fallback)
+        // Build a plain text prompt for OpenAI
         const textOnly = contentArray
-          .map((c: any) => (c.type === 'text' ? c.text : '[Image attached - not visible in fallback mode]'))
+          .map((c: any) => (c.type === 'text' ? c.text : '[Image attached]'))
           .join('\n');
-        
         const completion = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
           max_tokens: 800,
           messages: [
-            { role: 'system', content: veraSystemPrompt },
+            { role: 'system', content: 'You are VERA, a compassionate, trauma-informed co-regulator. Be concise, warm, and practical.' },
             { role: 'user', content: textOnly },
           ],
           temperature: 0.7,
         });
-        
         veraResponse = completion.choices?.[0]?.message?.content || 'I had trouble generating a response.';
-        console.log('🟠 OpenAI fallback successful');
-      } catch (openaiError) {
-        console.error('❌ OpenAI fallback also failed:', openaiError);
-        throw openaiError;
+      } catch (openaiErr) {
+        console.error('OpenAI fallback also failed:', openaiErr);
+        throw openaiErr;
       }
     }
 
-    // ============================================================================
-    // CRISIS DETECTION (Enhanced with crisis-protocol.ts)
-    // ============================================================================
-
-    const crisisDetection = detectCrisis(userText);
-    const isCrisis = crisisDetection.isCrisis;
-
-    if (isCrisis && user) {
-      console.log('🚨 CRISIS DETECTED:', crisisDetection.crisisType, `(${crisisDetection.confidence}%)`);
-      await supabase.from('crisis_alerts').insert({
-        user_id: user.id,
-        message_content: message,
-        crisis_type: crisisDetection.crisisType,
-        confidence: crisisDetection.confidence,
-        detected_at: new Date().toISOString(),
-      });
-    }
-
-    // ============================================================================
-    // SAVE TO DATABASE
-    // ============================================================================
-
+    // Save messages to database (skip in dev mode if no user)
     if (user) {
       await supabase.from('messages').insert([
         {
           user_id: user.id,
           role: 'user',
-          content: hasText ? userText : '[image]',
-          has_image: !!imageData,
-          has_biometrics: !!biometricData,
+          content: hasText ? userText : '[image] ',
           created_at: new Date().toISOString(),
         },
         {
@@ -445,37 +410,31 @@ Recommendations: ${deepAnalysis.recommendations?.join(', ') || 'none'}
       ]);
     }
 
-    // ============================================================================
-    // RETURN ENHANCED RESPONSE
-    // ============================================================================
+    // Check for crisis indicators
+    const crisisKeywords = ['suicide', 'kill myself', 'end it all', 'not worth living', 'want to die'];
+    const isCrisis = hasText && crisisKeywords.some((keyword) =>
+      userText.toLowerCase().includes(keyword)
+    );
+
+    if (isCrisis && user) {
+      await supabase.from('crisis_alerts').insert({
+        user_id: user.id,
+        message_content: message,
+        detected_at: new Date().toISOString(),
+      });
+    }
 
     return NextResponse.json({
-      // Core response (backward compatible)
       response: veraResponse,
       isCrisis,
-      
-      // Enhanced: Full pattern detection data (new, opt-in)
-      detectedPatterns: {
-        adaptiveCodes: enrichedAdaptiveCodes,
-        quantumState: quantumState,
-        quantumStateDescription: typeof quantumState === 'string' ? quantumState : quantumState.primaryState,
-        biometricAnalysis: biometricAnalysis, // undefined if not sent
-        deepAnalysis: deepAnalysis.patterns?.length > 0 ? deepAnalysis : undefined,
-      },
-      
-      // Metadata
-      mode: conversationMode,
-      timestamp: new Date().toISOString(),
-      
     }, {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     });
-    
   } catch (error) {
-    console.error('❌ Chat API error at', new Date().toISOString());
+    console.error('❌ Chat API error:', error);
     console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     
@@ -485,7 +444,7 @@ Recommendations: ${deepAnalysis.recommendations?.join(', ') || 'none'}
     return NextResponse.json(
       { 
         error: 'Failed to process message',
-        details: process.env.NODE_ENV === 'development' ? errorMsg : 'An error occurred',
+        details: errorMsg,
         timestamp: new Date().toISOString(),
       },
       { 

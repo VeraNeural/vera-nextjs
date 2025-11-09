@@ -591,4 +591,3 @@ export function resumeVERASession(
   console.log(`[VERA Core] Resumed session ${sessionData.sessionId}`);
   return engine;
 }
-/**

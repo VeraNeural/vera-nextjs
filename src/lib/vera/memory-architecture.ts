@@ -23,35 +23,9 @@ export interface ConsentBoundaries {
   safeWords?: string[];
 }
 
-export interface UserNervousSystemProfile {
-  name: string;
-  pronouns?: string;
-  timezone?: string;
-  
-  somaticPatterns: SomaticPattern[];
-  adaptiveStrategies: string[];
-  
-  memory: string;
-  context: string;
-  relationshipStart: Date;
-  
-  metaLearning: {
-    interventionHistory: any[];
-    whatWorks: string[];
-    whatDoesnt: string[];
-    learningNotes: string;
-  };
-  
-  vulnerabilityWindows?: {
-    timeOfDay: string;
-    dayOfWeek?: string;
-    pattern: string;
-    severity: 'mild' | 'moderate' | 'severe';
-  }[];
-  
-  consentPreferences: ConsentBoundaries;
-  recentStates: any[];
-}
+// Re-export from types to avoid duplication
+export type { UserNervousSystemProfile } from './types';
+import { UserNervousSystemProfile } from './types';
 
 export function createDefaultUserProfile(name: string): UserNervousSystemProfile {
   return {
