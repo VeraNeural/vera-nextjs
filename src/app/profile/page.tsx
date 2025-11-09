@@ -35,8 +35,8 @@ export default function ProfilePage() {
 
   useEffect(() => {
     loadProfile();
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem('theme') || 'dark';
+    // Load theme from localStorage (use vera-theme key for consistency)
+    const savedTheme = localStorage.getItem('vera-theme') || 'dark';
     setCurrentTheme(savedTheme);
   }, []);
 
@@ -371,7 +371,7 @@ export default function ProfilePage() {
                           key={theme}
                           onClick={() => {
                             document.documentElement.setAttribute('data-theme', theme);
-                            localStorage.setItem('theme', theme);
+                            localStorage.setItem('vera-theme', theme);
                             setCurrentTheme(theme);
                           }}
                           className="px-4 py-2 rounded-lg font-medium transition-all capitalize"
