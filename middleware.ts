@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
 
 // Canonical domain enforcement (configurable via env)
 // Set APP_CANONICAL_HOST to your desired host (e.g., 'app.veraneural.com' or 'veraneural.com')
@@ -13,24 +14,25 @@ if (isValidDomain && CANONICAL_HOST) {
   console.warn('Invalid CANONICAL_HOST configured. Skipping enforcement.');
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
 
-  // Skip when not enforcing, in development, invalid domain, or no canonical set
-  if (!ENFORCE || process.env.NODE_ENV !== 'production' || isValidDomain || !CANONICAL_HOST) {
-    return NextResponse.next();
+  // First: Update/refresh session (critical for auth persistence)
+  let response = await updateSession(request);
+
+  // Then: Handle canonical domain enforcement
+  if (ENFORCE && process.env.NODE_ENV === 'production' && !isValidDomain && CANONICAL_HOST) {
+    // Already on canonical host
+    if (host.toLowerCase() !== CANONICAL_HOST) {
+      // Redirect every other host (preview URLs, old domains) to the canonical domain
+      const url = new URL(request.url);
+      url.host = CANONICAL_HOST;
+      url.protocol = 'https:';
+      response = NextResponse.redirect(url, 308);
+    }
   }
 
-  // Already on canonical host
-  if (host.toLowerCase() === CANONICAL_HOST) {
-    return NextResponse.next();
-  }
-
-  // Redirect every other host (preview URLs, old domains) to the canonical domain
-  const url = new URL(request.url);
-  url.host = CANONICAL_HOST;
-  url.protocol = 'https:';
-  return NextResponse.redirect(url, 308);
+  return response;
 }
 
 // Don't run for static assets; allow webhook to receive raw host unchanged

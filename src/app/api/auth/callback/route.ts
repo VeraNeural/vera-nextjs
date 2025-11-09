@@ -30,18 +30,40 @@ export async function GET(request: NextRequest) {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          const value = cookieStore.get(name)?.value;
+          if (value) {
+            console.log(`📖 Cookie read: ${name}`);
+          }
+          return value;
         },
         set(name: string, value: string, options: any) {
           try {
-            cookieStore.set({ name, value, ...options });
-            response.cookies.set(name, value, options);
+            console.log(`💾 Cookie set: ${name}`);
+            // Set in server cookie store
+            cookieStore.set({ 
+              name, 
+              value, 
+              ...options,
+              httpOnly: true,
+              secure: true,
+              sameSite: 'lax',
+              path: '/',
+            });
+            // Also set in response
+            response.cookies.set(name, value, {
+              ...options,
+              httpOnly: true,
+              secure: true,
+              sameSite: 'lax',
+              path: '/',
+            });
           } catch (error) {
             console.error('Cookie set error:', error);
           }
         },
         remove(name: string, options: any) {
           try {
+            console.log(`🗑️ Cookie remove: ${name}`);
             cookieStore.set({ name, value: '', ...options });
             response.cookies.set(name, '', options);
           } catch (error) {
@@ -155,13 +177,28 @@ export async function GET(request: NextRequest) {
   }
 
   console.log('🔄 Redirecting to chat');
-  response = NextResponse.redirect(`${requestUrl.origin}/chat-exact`);
   
-  // Re-apply cookies to the redirect response
+  // Create redirect response with cookies
+  const redirectResponse = NextResponse.redirect(`${requestUrl.origin}/chat-exact`);
+  
+  // Apply ALL cookies from the store to the redirect response
+  // This is critical for session persistence
   const allCookies = cookieStore.getAll();
-  allCookies.forEach(({ name, value }) => {
-    response.cookies.set(name, value);
+  console.log(`📦 Applying ${allCookies.length} cookies to redirect response`);
+  
+  allCookies.forEach(({ name, value, ...options }) => {
+    console.log(`🔑 Setting cookie: ${name}`);
+    redirectResponse.cookies.set({
+      name,
+      value,
+      ...options,
+      // Ensure cookies are sent to client
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+    });
   });
   
-  return response;
+  return redirectResponse;
 }

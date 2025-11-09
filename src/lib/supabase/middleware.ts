@@ -41,16 +41,26 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  console.log('🔑 Middleware session check:', {
+    authenticated: !!user,
+    email: user?.email || 'none',
+  });
+
   // Protected routes - redirect to signin if not authenticated
+  const pathname = request.nextUrl.pathname;
+  
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/signin') &&
-    !request.nextUrl.pathname.startsWith('/signup') &&
-    !request.nextUrl.pathname.startsWith('/reset-password') &&
-    !request.nextUrl.pathname.startsWith('/api/auth')
+    !pathname.startsWith('/auth/signup') &&
+    !pathname.startsWith('/auth/login') &&
+    !pathname.startsWith('/legal') &&
+    !pathname.startsWith('/api/auth') &&
+    !pathname.startsWith('/api/health') &&
+    !pathname.startsWith('/')
   ) {
+    console.log('🔄 Redirecting unauthenticated user to signup:', pathname);
     const url = request.nextUrl.clone();
-    url.pathname = '/signin';
+    url.pathname = '/auth/signup';
     return NextResponse.redirect(url);
   }
 
