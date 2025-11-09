@@ -3,6 +3,8 @@
 import { formatDistanceToNow } from 'date-fns';
 import { useEffect, useState } from 'react';
 import BreathingOrb from '../orb/BreathingOrb';
+import { useTtsHume } from '@/hooks/useTtsHume';
+import { routeToTTSService, getHumeExpressiveness } from '@/lib/tts-router';
 
 interface MessageBubbleProps {
   id: string;
@@ -27,6 +29,33 @@ export default function MessageBubble({
 }: MessageBubbleProps) {
   const isVera = role === 'assistant';
   const [theme, setTheme] = useState<string>('dark');
+  const [isPlayingHume, setIsPlayingHume] = useState(false);
+  const { speak: speakHume, isLoading: humeLoading, error: humeError } = useTtsHume();
+
+  // Get TTS routing for this message
+  const ttsRouting = isVera ? routeToTTSService(content, { preferredLatency: 'quality' }) : null;
+  const humeExpressiveness = isVera ? getHumeExpressiveness(content) : null;
+
+  const handlePlayWithHume = async () => {
+    if (!isVera || !content) return;
+    try {
+      setIsPlayingHume(true);
+      console.log('🎤 Hume AI TTS:', {
+        contentType: ttsRouting?.contentType,
+        expressiveness: humeExpressiveness,
+      });
+
+      await speakHume(content, {
+        mode: (ttsRouting?.contentType as any) || 'default',
+        ...humeExpressiveness,
+        autoPlay: true,
+      });
+    } catch (err) {
+      console.error('❌ Hume AI playback failed:', err);
+    } finally {
+      setIsPlayingHume(false);
+    }
+  };
 
   useEffect(() => {
     // Get initial theme
@@ -119,6 +148,18 @@ export default function MessageBubble({
         {/* Actions */}
         <div className="flex items-center gap-3 mt-2 text-sm text-text-tertiary">
           <span>{formatDistanceToNow(new Date(timestamp), { addSuffix: true })}</span>
+          
+          {/* Hume AI Play Button (VERA messages only) */}
+          {isVera && content && (
+            <button
+              onClick={handlePlayWithHume}
+              disabled={humeLoading || isPlayingHume}
+              className="hover:text-orb-purple transition-colors disabled:opacity-50"
+              title={ttsRouting?.reason || 'Play VERA voice'}
+            >
+              {isPlayingHume || humeLoading ? '⏸' : '🎤'}
+            </button>
+          )}
           
           {onSave && (
             <button
