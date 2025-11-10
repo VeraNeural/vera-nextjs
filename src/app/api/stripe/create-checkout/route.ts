@@ -1,11 +1,11 @@
 // src/app/api/stripe/create-checkout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-10-29.clover',
-});
+import { env } from '@/lib/env';
+import { stripe } from '@/lib/stripe/config';
+import { getPriceIdForPlan, isPlanSlug } from '@/lib/stripe/plans';
+import type { PlanSlug } from '@/types/subscription';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,14 +20,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { priceId } = await request.json();
+    const body = await request.json();
+    const planCandidate = body?.plan;
 
-    if (!priceId) {
+    if (!isPlanSlug(planCandidate)) {
       return NextResponse.json(
-        { error: 'Price ID is required' },
+        { error: 'Invalid or unsupported plan' },
         { status: 400 }
       );
     }
+
+    const planSlug: PlanSlug = planCandidate;
+    const priceId = getPriceIdForPlan(planSlug);
 
     // Get or create Stripe customer
     const { data: userData } = await supabase
@@ -65,16 +69,17 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout`,
+      success_url: `${env.app.url}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${env.app.url}/checkout`,
       metadata: {
         supabase_user_id: user.id,
+        plan: planSlug,
       },
     });
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error('Checkout error:', error);
+    logger.error('Checkout error', error instanceof Error ? error : { error });
     return NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }

@@ -4,7 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { detectAdaptiveCodes } from '@/lib/vera/adaptive-codes';
 import { calculateQuantumState } from '@/lib/vera/quantum-states';
 import { generateRealTalkPrompt, detectMode, detectModeSwitch } from '@/lib/vera/real-talk';
-import { analyzeDecodeRequest, generateDecodePrompt } from '@/lib/vera/decode-mode';
+import { analyzeDecodeRequest } from '@/lib/vera/decode-mode';
+import { logger } from '@/lib/logger';
+import { env } from '@/lib/env';
 import OpenAI from 'openai';
 
 // Ensure this route is always dynamic (not cached)
@@ -14,6 +16,23 @@ export const revalidate = 0;
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const shouldLog = env.app.debugLogs;
+
+const debugLog = (message: string, meta?: Record<string, unknown>) => {
+  if (!shouldLog) return;
+  logger.debug(message, meta);
+};
+
+const warnLog = (message: string, meta?: Record<string, unknown>) => {
+  if (!shouldLog) return;
+  logger.warn(message, meta);
+};
+
+const errorLog = (message: string, meta?: Record<string, unknown>) => {
+  if (!shouldLog) return;
+  logger.error(message, meta);
+};
 
 /**
  * VERA SYSTEM PROMPT FOR GPT-4 API
@@ -94,16 +113,22 @@ function sanitizeVERAResponse(response: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('💬 /api/chat - Request received');
+    debugLog('💬 /api/chat - Request received');
     const requestData = await request.json();
-    console.log('📦 Request keys:', Object.keys(requestData));
+    debugLog('📦 Request keys:', { keys: Object.keys(requestData) });
     
     const { message, imageData } = requestData;
-    console.log('📝 Message:', message?.substring(0, 50) + '...');
-    console.log('🖼️  ImageData present:', !!imageData, imageData ? { mimeType: imageData.mimeType, base64Length: imageData.base64?.length } : 'none');
+    debugLog('📝 Message payload received', {
+      length: typeof message === 'string' ? message.length : 0,
+      hasContent: Boolean(message && message.trim()),
+    });
+    debugLog('🖼️ Image attachment metadata', imageData ? {
+      mimeType: imageData.mimeType,
+      base64Length: typeof imageData.base64 === 'string' ? imageData.base64.length : 0,
+    } : { attached: false });
 
     if (!message && !imageData) {
-      console.error('❌ No message or image provided');
+  warnLog('Chat request missing message and image');
       return NextResponse.json(
         { error: 'Message or image is required' },
         { status: 400 }
@@ -136,7 +161,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (userError) {
-        console.error('Failed to fetch user data:', userError);
+  errorLog('Failed to fetch subscription data for chat request', userError instanceof Error ? userError : { error: userError });
         return NextResponse.json(
           { error: 'Failed to verify access' },
           { status: 500 }
@@ -243,7 +268,7 @@ export async function POST(request: NextRequest) {
   
   if (openaiKeyPresent) {
     try {
-      console.log('🟠 Calling OpenAI for deep pattern analysis...');
+  debugLog('🟠 Calling OpenAI for deep pattern analysis...');
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       
       const analysisPrompt = `Analyze this message for deep emotional and nervous system patterns. Return JSON with:
@@ -274,13 +299,17 @@ Be precise, somatic-focused, and trauma-informed.`;
       if (analysisText) {
         try {
           deepAnalysis = JSON.parse(analysisText);
-          console.log('🟠 OpenAI analysis:', deepAnalysis);
+          debugLog('🟠 OpenAI analysis complete', {
+            patternCount: Array.isArray(deepAnalysis.patterns) ? deepAnalysis.patterns.length : 0,
+            hasEmotionalState: Boolean(deepAnalysis.emotionalState),
+            recommendationCount: Array.isArray(deepAnalysis.recommendations) ? deepAnalysis.recommendations.length : 0,
+          });
         } catch (e) {
-          console.warn('⚠️  Could not parse OpenAI JSON response');
+          warnLog('Could not parse OpenAI JSON response for chat analysis', e instanceof Error ? e : { error: e });
         }
       }
     } catch (openaiErr) {
-      console.error('⚠️  OpenAI analysis failed:', openaiErr);
+  errorLog('OpenAI analysis failed for chat request', openaiErr instanceof Error ? openaiErr : { error: openaiErr });
       // Continue without deep analysis - Claude will still work
     }
   }
@@ -313,12 +342,12 @@ Be precise, somatic-focused, and trauma-informed.`;
     
     if (imageData) {
       // Add image first
-      console.log('📸 Adding image to request:', imageData.mimeType);
+  debugLog('📸 Adding image to request', { mimeType: imageData.mimeType });
       
       // Extract base64 if it includes data URI prefix
       let base64Data = imageData.base64;
       if (typeof base64Data !== 'string') {
-        console.error('❌ Base64 is not a string:', typeof base64Data);
+  warnLog('Image data base64 payload is not a string', { type: typeof base64Data });
         return NextResponse.json(
           { error: 'Invalid image data format' },
           { status: 400 }
@@ -334,7 +363,7 @@ Be precise, somatic-focused, and trauma-informed.`;
 
       // Validate base64 data
       if (!base64Data || base64Data.length === 0) {
-        console.error('❌ Invalid base64 data - empty after extraction');
+        warnLog('Image data base64 payload empty after extraction');
         return NextResponse.json(
           { error: 'Invalid image data - base64 is empty' },
           { status: 400 }
@@ -346,14 +375,14 @@ Be precise, somatic-focused, and trauma-informed.`;
       const mimeType = imageData.mimeType || 'image/jpeg';
       
       if (!validMimeTypes.includes(mimeType)) {
-        console.error('❌ Invalid mime type:', mimeType);
+        warnLog('Unsupported image mime type received', { mimeType });
         return NextResponse.json(
           { error: `Invalid image mime type. Supported: ${validMimeTypes.join(', ')}` },
           { status: 400 }
         );
       }
 
-      console.log('✅ Base64 data extracted, length:', base64Data.length, 'mime:', mimeType);
+  debugLog('✅ Base64 data extracted', { length: base64Data.length, mimeType });
       
       // Add image to content array in Claude Vision format
       contentArray.push({
@@ -377,7 +406,7 @@ Be warm, observational, and supportive.
 
 ${veraPrompt}`;
     } else {
-      console.log('ℹ️  No image data in request');
+  debugLog('ℹ️  No image data in request');
     }
     
     // Add text prompt
@@ -386,12 +415,14 @@ ${veraPrompt}`;
       text: veraPrompt,
     });
 
-    console.log('📨 ContentArray built with', contentArray.length, 'elements');
-    console.log('📋 ContentArray structure:', JSON.stringify(contentArray.map((c: any) => ({
-      type: c.type,
-      hasSource: !!c.source,
-      textLength: c.text?.length || 0,
-    })), null, 2));
+    debugLog('📨 ContentArray built', { count: contentArray.length });
+    debugLog('📋 ContentArray structure', {
+      items: contentArray.map((c: any) => ({
+        type: c.type,
+        hasSource: !!c.source,
+        textLength: c.text?.length || 0,
+      })),
+    });
 
     // Generate VERA's response using GPT-4 Turbo with vision support
     let veraResponse: string | null = null;
@@ -401,7 +432,7 @@ ${veraPrompt}`;
         throw new Error('OpenAI API key missing');
       }
       
-      console.log('🔵 Calling GPT-4 Turbo with:', {
+      debugLog('🔵 Calling GPT-4 Turbo', {
         model: 'gpt-4-turbo-preview',
         contentCount: contentArray.length,
         hasImage: contentArray.some((c: any) => c.type === 'image'),
@@ -449,7 +480,7 @@ ${veraPrompt}`;
         frequency_penalty: 0.1,
       });
 
-      console.log('🟢 GPT-4 response received:', {
+      debugLog('🟢 GPT-4 response received', {
         finishReason: response.choices[0]?.finish_reason,
         usage: {
           inputTokens: response.usage?.prompt_tokens,
@@ -460,16 +491,15 @@ ${veraPrompt}`;
       const choice = response.choices[0];
       if (choice && choice.message) {
         veraResponse = choice.message.content as string;
-        console.log('✅ Response extracted successfully, length:', veraResponse.length);
+        debugLog('✅ Response extracted successfully', { length: veraResponse.length });
       } else {
         veraResponse = 'I apologize, I had trouble generating a response.';
-        console.error('❌ Unexpected response format from GPT-4');
+  errorLog('Unexpected response format from OpenAI completion');
       }
     } catch (gptErr) {
-      console.error('GPT-4 generation failed:', gptErr);
+  errorLog('OpenAI chat completion failed for chat route', gptErr instanceof Error ? gptErr : { error: gptErr });
       // No fallback needed - GPT-4 is primary and only option now
       veraResponse = 'I apologize, I had trouble generating a response. Please try again.';
-      throw gptErr;
     }
 
     // Save messages to database (skip in dev mode if no user)
@@ -514,9 +544,7 @@ ${veraPrompt}`;
       },
     });
   } catch (error) {
-    console.error('❌ Chat API error:', error);
-    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
-    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+  errorLog('Chat API error', error instanceof Error ? error : { error });
     
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     const statusCode = errorMsg.includes('401') ? 401 : errorMsg.includes('403') ? 403 : 500;

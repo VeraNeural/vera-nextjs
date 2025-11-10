@@ -1,6 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { User, Session } from '@/types/auth';
 import type { Message } from '@/types/chat';
+import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 // Define MagicLink type locally since it's not in the types files
 interface MagicLink {
@@ -12,14 +14,40 @@ interface MagicLink {
   created_at: string;
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let cachedServiceClient: SupabaseClient | null | undefined;
+
+export function createServiceClientOptional(): SupabaseClient | null {
+  if (cachedServiceClient !== undefined) {
+    return cachedServiceClient;
+  }
+
+  if (!env.supabase.serviceRoleKey) {
+    if (env.app.debugLogs) {
+      logger.debug('[db] Service role key missing; privileged Supabase client unavailable');
+    }
+    cachedServiceClient = null;
+    return cachedServiceClient;
+  }
+
+  cachedServiceClient = createClient(env.supabase.url, env.supabase.serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+
+  return cachedServiceClient;
+}
 
 // ==================== USERS ====================
 
 export async function getUserByEmail(email: string): Promise<User | null> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] getUserByEmail skipped: service role unavailable');
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -27,7 +55,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     .single();
 
   if (error) {
-    console.error('[db] getUserByEmail error:', error);
+    logger.error('[db] getUserByEmail error', error instanceof Error ? error : { error });
     return null;
   }
 
@@ -35,6 +63,12 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 }
 
 export async function createUser(email: string): Promise<User | null> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] createUser skipped: service role unavailable');
+    return null;
+  }
+
   const trialEnd = new Date();
   trialEnd.setHours(trialEnd.getHours() + 48);
 
@@ -49,7 +83,7 @@ export async function createUser(email: string): Promise<User | null> {
     .single();
 
   if (error) {
-    console.error('[db] createUser error:', error);
+    logger.error('[db] createUser error', error instanceof Error ? error : { error });
     return null;
   }
 
@@ -61,6 +95,12 @@ export async function updateUserSubscription(
   customerId: string,
   subscriptionId: string
 ): Promise<boolean> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] updateUserSubscription skipped: service role unavailable');
+    return false;
+  }
+
   const { error } = await supabase
     .from('users')
     .update({
@@ -72,7 +112,7 @@ export async function updateUserSubscription(
     .eq('id', userId);
 
   if (error) {
-    console.error('[db] updateUserSubscription error:', error);
+    logger.error('[db] updateUserSubscription error', error instanceof Error ? error : { error });
     return false;
   }
 
@@ -82,6 +122,12 @@ export async function updateUserSubscription(
 // ==================== SESSIONS ====================
 
 export async function createSession(userId: string): Promise<Session | null> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] createSession skipped: service role unavailable');
+    return null;
+  }
+
   const token = require('nanoid').nanoid(64);
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
@@ -97,7 +143,7 @@ export async function createSession(userId: string): Promise<Session | null> {
     .single();
 
   if (error) {
-    console.error('[db] createSession error:', error);
+    logger.error('[db] createSession error', error instanceof Error ? error : { error });
     return null;
   }
 
@@ -105,6 +151,12 @@ export async function createSession(userId: string): Promise<Session | null> {
 }
 
 export async function getSessionByToken(token: string): Promise<(Session & { user: User }) | null> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] getSessionByToken skipped: service role unavailable');
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('sessions')
     .select(`
@@ -116,7 +168,7 @@ export async function getSessionByToken(token: string): Promise<(Session & { use
     .single();
 
   if (error) {
-    console.error('[db] getSessionByToken error:', error);
+    logger.error('[db] getSessionByToken error', error instanceof Error ? error : { error });
     return null;
   }
 
@@ -127,13 +179,19 @@ export async function getSessionByToken(token: string): Promise<(Session & { use
 }
 
 export async function deleteSession(token: string): Promise<boolean> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] deleteSession skipped: service role unavailable');
+    return false;
+  }
+
   const { error } = await supabase
     .from('sessions')
     .delete()
     .eq('token', token);
 
   if (error) {
-    console.error('[db] deleteSession error:', error);
+    logger.error('[db] deleteSession error', error instanceof Error ? error : { error });
     return false;
   }
 
@@ -143,6 +201,12 @@ export async function deleteSession(token: string): Promise<boolean> {
 // ==================== MAGIC LINKS ====================
 
 export async function createMagicLink(email: string): Promise<MagicLink | null> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] createMagicLink skipped: service role unavailable');
+    return null;
+  }
+
   const token = require('nanoid').nanoid(32);
   const expiresAt = new Date();
   expiresAt.setMinutes(expiresAt.getMinutes() + 15);
@@ -159,7 +223,7 @@ export async function createMagicLink(email: string): Promise<MagicLink | null> 
     .single();
 
   if (error) {
-    console.error('[db] createMagicLink error:', error);
+    logger.error('[db] createMagicLink error', error instanceof Error ? error : { error });
     return null;
   }
 
@@ -167,6 +231,12 @@ export async function createMagicLink(email: string): Promise<MagicLink | null> 
 }
 
 export async function getMagicLink(token: string): Promise<MagicLink | null> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] getMagicLink skipped: service role unavailable');
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('magic_links')
     .select('*')
@@ -176,7 +246,7 @@ export async function getMagicLink(token: string): Promise<MagicLink | null> {
     .single();
 
   if (error) {
-    console.error('[db] getMagicLink error:', error);
+    logger.error('[db] getMagicLink error', error instanceof Error ? error : { error });
     return null;
   }
 
@@ -184,13 +254,19 @@ export async function getMagicLink(token: string): Promise<MagicLink | null> {
 }
 
 export async function markMagicLinkUsed(token: string): Promise<boolean> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] markMagicLinkUsed skipped: service role unavailable');
+    return false;
+  }
+
   const { error } = await supabase
     .from('magic_links')
     .update({ used: true })
     .eq('token', token);
 
   if (error) {
-    console.error('[db] markMagicLinkUsed error:', error);
+    logger.error('[db] markMagicLinkUsed error', error instanceof Error ? error : { error });
     return false;
   }
 
@@ -204,6 +280,12 @@ export async function saveMessage(
   role: 'user' | 'assistant',
   content: string
 ): Promise<Message | null> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] saveMessage skipped: service role unavailable');
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('messages')
     .insert({
@@ -215,7 +297,7 @@ export async function saveMessage(
     .single();
 
   if (error) {
-    console.error('[db] saveMessage error:', error);
+    logger.error('[db] saveMessage error', error instanceof Error ? error : { error });
     return null;
   }
 
@@ -223,6 +305,12 @@ export async function saveMessage(
 }
 
 export async function getMessages(userId: string, limit = 50): Promise<Message[]> {
+  const supabase = createServiceClientOptional();
+  if (!supabase) {
+    logger.warn('[db] getMessages skipped: service role unavailable');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('messages')
     .select('*')
@@ -231,7 +319,7 @@ export async function getMessages(userId: string, limit = 50): Promise<Message[]
     .limit(limit);
 
   if (error) {
-    console.error('[db] getMessages error:', error);
+    logger.error('[db] getMessages error', error instanceof Error ? error : { error });
     return [];
   }
 

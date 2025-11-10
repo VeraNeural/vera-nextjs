@@ -1,15 +1,17 @@
 // src/app/api/billing/checkout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
+import { env } from '@/lib/env';
+import { stripe } from '@/lib/stripe/config';
+import { getPriceIdForPlan, isPlanSlug } from '@/lib/stripe/plans';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
     const origin = new URL(request.url).origin;
     const { plan } = await request.json();
 
-    // Validate plan
-    if (plan !== 'monthly' && plan !== 'annual') {
+    if (!isPlanSlug(plan)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
@@ -21,17 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    // Initialize Stripe
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-    // Get appropriate price ID based on plan
-    const priceId = plan === 'monthly'
-      ? process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY
-      : process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ANNUAL;
-
-    if (!priceId) {
-      return NextResponse.json({ error: 'Missing Stripe price ID' }, { status: 500 });
-    }
+    const priceId = getPriceIdForPlan(plan);
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -55,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error('Checkout error:', error);
+  logger.error('Checkout error (legacy billing endpoint)', error instanceof Error ? error : { error });
     return NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }

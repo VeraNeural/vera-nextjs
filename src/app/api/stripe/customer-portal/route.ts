@@ -1,11 +1,9 @@
 // src/app/api/stripe/customer-portal/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-10-29.clover',
-});
+import { stripe } from '@/lib/stripe/config';
+import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,12 +33,12 @@ export async function POST(request: NextRequest) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: userData.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+      return_url: `${env.app.url}/dashboard`,
     });
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error('Customer portal error:', error);
+    logger.error('Customer portal error', error instanceof Error ? error : { error });
     return NextResponse.json(
       { error: 'Failed to create portal session' },
       { status: 500 }

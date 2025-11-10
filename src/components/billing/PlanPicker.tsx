@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
+import type { PlanSlug } from '@/types/subscription';
 
 interface PlanPickerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (plan: "monthly" | "annual") => void;
+  onSelect: (plan: PlanSlug) => void;
 }
 
 export default function PlanPicker({
@@ -12,7 +13,7 @@ export default function PlanPicker({
   onClose,
   onSelect,
 }: PlanPickerProps) {
-  const [loading, setLoading] = useState<"monthly" | "annual" | null>(null);
+  const [loading, setLoading] = useState<PlanSlug | null>(null);
 
   if (!isOpen) return null;
 
@@ -51,16 +52,16 @@ export default function PlanPicker({
         <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
           <button
             onClick={async () => {
-              setLoading("monthly");
-              onSelect("monthly");
+              setLoading("starter");
+              onSelect("starter");
             }}
-            disabled={loading === "monthly" || loading === "annual"}
+            disabled={loading === "starter" || loading === "annual"}
             style={{
               padding: "10px 14px",
               borderRadius: 12,
               border: "1px solid var(--border-color)",
               background:
-                loading === "monthly"
+                loading === "starter"
                   ? "linear-gradient(135deg, #8B5CF6, #3B82F6)"
                   : "linear-gradient(135deg, #8B5CF6, #3B82F6)",
               color: "#fff",
@@ -68,14 +69,14 @@ export default function PlanPicker({
               cursor: "pointer",
             }}
           >
-            {loading === "monthly" ? "Redirecting…" : "Upgrade • $12 / month"}
+            {loading === "starter" ? "Redirecting…" : "Upgrade • $12 / month"}
           </button>
           <button
             onClick={async () => {
               setLoading("annual");
               onSelect("annual");
             }}
-            disabled={loading === "monthly" || loading === "annual"}
+            disabled={loading === "starter" || loading === "annual"}
             style={{
               padding: "10px 14px",
               borderRadius: 12,

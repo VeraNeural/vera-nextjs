@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe/config';
+import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,12 +34,12 @@ export async function POST(request: NextRequest) {
     // Create portal session
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: userData.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
+      return_url: `${env.app.url}/pricing`,
     });
 
     return NextResponse.json({ url: portalSession.url });
   } catch (error) {
-    console.error('Portal error:', error);
+    logger.error('Portal error', error instanceof Error ? error : { error });
     return NextResponse.json(
       { error: 'Failed to create portal session' },
       { status: 500 }

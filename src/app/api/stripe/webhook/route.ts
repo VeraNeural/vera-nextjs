@@ -1,19 +1,22 @@
 // src/app/api/stripe/webhook/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-10-29.clover',
-});
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServiceClient } from '@/lib/supabase/service';
+import { env } from '@/lib/env';
+import { stripe } from '@/lib/stripe/config';
+import { getPlanForPriceId } from '@/lib/stripe/plans';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAdmin = createServiceClient();
+    if (!supabaseAdmin) {
+      logger.error('Stripe webhook handler missing SUPABASE_SERVICE_ROLE_KEY.');
+      return NextResponse.json(
+        { error: 'Service client unavailable' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
 
@@ -27,7 +30,7 @@ export async function POST(request: NextRequest) {
     const event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      env.stripe.webhookSecret
     );
 
     switch (event.type) {
@@ -36,16 +39,17 @@ export async function POST(request: NextRequest) {
         const userId = session.metadata?.supabase_user_id;
 
         if (userId && session.subscription) {
-          const subscriptionId = typeof session.subscription === 'string' 
-            ? session.subscription 
+          const subscriptionId = typeof session.subscription === 'string'
+            ? session.subscription
             : session.subscription.id;
 
           const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId);
+          const planSlug = getPlanForPriceId(subscriptionData.items.data[0]?.price?.id) ?? null;
 
           await supabaseAdmin.from('users').update({
             subscription_status: 'active' as const,
             stripe_subscription_id: subscriptionData.id,
-            subscription_plan: (subscriptionData.items.data[0].price.recurring?.interval as string) || 'monthly',
+            subscription_plan: planSlug,
             subscription_current_period_end: new Date((subscriptionData as any).current_period_end * 1000).toISOString(),
             trial_end: null,
           }).eq('id', userId);
@@ -55,6 +59,8 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
+        const priceId = subscription.items.data[0]?.price?.id;
+        const planSlug = getPlanForPriceId(priceId);
         const customerId = subscription.customer as string;
 
         const { data: user } = await supabaseAdmin
@@ -66,6 +72,7 @@ export async function POST(request: NextRequest) {
         if (user) {
           await supabaseAdmin.from('users').update({
             subscription_status: subscription.status,
+            subscription_plan: planSlug,
           }).eq('id', user.id);
         }
         break;
@@ -112,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Webhook error:', error);
+    logger.error('Stripe webhook error', error instanceof Error ? error : { error });
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }

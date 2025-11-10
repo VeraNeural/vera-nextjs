@@ -1,15 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { createServiceClientOptional } from '@/lib/supabase/database';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -29,6 +25,17 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.substring(7);
+    const supabase = createServiceClientOptional();
+
+    if (!supabase) {
+      clearTimeout(timeoutId);
+      logger.warn('Image analysis skipped: service role client unavailable');
+      return NextResponse.json(
+        { error: 'service_unavailable' },
+        { status: 503 }
+      );
+    }
+
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       return NextResponse.json(
@@ -106,6 +113,7 @@ export async function POST(request: NextRequest) {
       result: resultText,
     });
   } catch (error) {
+    logger.error('Image analysis error', error instanceof Error ? error : { error });
     return NextResponse.json({ error: (error as Error).message || 'Unknown error' }, { status: 500 });
   }
 }
