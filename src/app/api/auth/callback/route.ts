@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   // Use @supabase/ssr to manage cookies automatically
   const cookieStore = await cookies();
-  let response = NextResponse.next();
+  const cookiesList: Array<{name: string; value: string; options: any}> = [];
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,19 +38,13 @@ export async function GET(request: NextRequest) {
         },
         set(name: string, value: string, options: any) {
           try {
-            console.log(`💾 Cookie set: ${name}`);
+            console.log(`💾 Cookie set by Supabase: ${name}`);
+            // Track all cookies Supabase sets
+            cookiesList.push({ name, value, options });
             // Set in server cookie store
             cookieStore.set({ 
               name, 
               value, 
-              ...options,
-              httpOnly: true,
-              secure: true,
-              sameSite: 'lax',
-              path: '/',
-            });
-            // Also set in response
-            response.cookies.set(name, value, {
               ...options,
               httpOnly: true,
               secure: true,
@@ -65,7 +59,6 @@ export async function GET(request: NextRequest) {
           try {
             console.log(`🗑️ Cookie remove: ${name}`);
             cookieStore.set({ name, value: '', ...options });
-            response.cookies.set(name, '', options);
           } catch (error) {
             console.error('Cookie remove error:', error);
           }
@@ -181,23 +174,37 @@ export async function GET(request: NextRequest) {
   // Create redirect response with cookies
   const redirectResponse = NextResponse.redirect(`${requestUrl.origin}/chat-exact`);
   
-  // Apply ALL cookies from the store to the redirect response
-  // This is critical for session persistence
-  const allCookies = cookieStore.getAll();
-  console.log(`📦 Applying ${allCookies.length} cookies to redirect response`);
+  // Apply ALL tracked cookies from Supabase to the redirect response
+  console.log(`📦 Applying ${cookiesList.length} tracked cookies to redirect response`);
   
-  allCookies.forEach(({ name, value, ...options }) => {
-    console.log(`🔑 Setting cookie: ${name}`);
+  cookiesList.forEach(({ name, value, options }) => {
+    console.log(`🔑 Applying cookie to response: ${name} (length: ${value.length})`);
     redirectResponse.cookies.set({
       name,
       value,
       ...options,
-      // Ensure cookies are sent to client
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
       path: '/',
     });
+  });
+  
+  // Also add any cookies from cookieStore that might have been set
+  const allCookies = cookieStore.getAll();
+  console.log(`📦 Also checking cookieStore for ${allCookies.length} cookies`);
+  allCookies.forEach(({ name, value }) => {
+    if (!cookiesList.some(c => c.name === name)) {
+      console.log(`🔑 Adding cookieStore cookie to response: ${name}`);
+      redirectResponse.cookies.set({
+        name,
+        value,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+      });
+    }
   });
   
   return redirectResponse;

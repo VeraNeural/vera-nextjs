@@ -49,15 +49,21 @@ export async function updateSession(request: NextRequest) {
   // Protected routes - redirect to signin if not authenticated
   const pathname = request.nextUrl.pathname;
   
-  if (
-    !user &&
-    !pathname.startsWith('/auth/signup') &&
-    !pathname.startsWith('/auth/login') &&
-    !pathname.startsWith('/legal') &&
-    !pathname.startsWith('/api/auth') &&
-    !pathname.startsWith('/api/health') &&
-    !pathname.startsWith('/')
-  ) {
+  // Public paths that don't require authentication
+  const publicPaths = [
+    '/auth/signup',
+    '/auth/login',
+    '/login',
+    '/legal',
+    '/api/auth',
+    '/api/health',
+    '/',
+    '/pricing',
+  ];
+  
+  const isPublicPath = publicPaths.some(p => pathname.startsWith(p));
+  
+  if (!user && !isPublicPath) {
     console.log('🔄 Redirecting unauthenticated user to signup:', pathname);
     const url = request.nextUrl.clone();
     url.pathname = '/auth/signup';

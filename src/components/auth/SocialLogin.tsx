@@ -46,7 +46,8 @@ export default function SocialLogin() {
 
   return (
     <div className="w-full max-w-md px-4">
-      <button
+      {/* Google Sign-In temporarily disabled - debugging OAuth issues */}
+      {/* <button
         onClick={signInWithGoogle}
         disabled={loadingGoogle}
         className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white text-gray-900 font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-60"
@@ -71,7 +72,7 @@ export default function SocialLogin() {
         <div className="flex-1 h-px bg-white/20" />
         <span className="text-white/70 text-sm">or</span>
         <div className="flex-1 h-px bg-white/20" />
-      </div>
+      </div> */}
     </div>
   );
 }
