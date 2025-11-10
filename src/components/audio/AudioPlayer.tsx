@@ -21,6 +21,7 @@ const AUDIO_TRACKS: AudioTrack[] = [
   { id: '10', name: 'Weatherscape', path: '/sounds/ES_Weatherscape - Fizzonaut.mp3' },
   { id: '11', name: 'Waltz of the Dead', path: '/sounds/ES_Waltz of the Dead - Mike Franklyn.mp3' },
   { id: '12', name: 'The Oak Tree', path: '/sounds/ES_The Oak Tree - Jakob Ahlbom.mp3' },
+  { id: '13', name: 'Guitar Humming', path: '/sounds/guitar-humming.mp3' },
 ];
 
 export default function AudioPlayer() {
