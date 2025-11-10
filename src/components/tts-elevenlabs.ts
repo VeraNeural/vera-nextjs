@@ -1,9 +1,8 @@
 import axios from "axios";
 
-export async function elevenlabsTTS(text: string, apiKey: string): Promise<string> {
+export async function elevenlabsTTS(text: string, apiKey: string, voiceId: string): Promise<string> {
   // ElevenLabs API endpoint for TTS
   const url = "https://api.elevenlabs.io/v1/text-to-speech";
-  const voiceId = "EXAVITQu4vr4xnSDxMaL"; // Default voice, replace as needed
 
   const response = await axios.post(
     `${url}/${voiceId}`,

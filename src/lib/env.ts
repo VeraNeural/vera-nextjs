@@ -33,10 +33,7 @@ export const env = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
 
-  // Anthropic (Claude API)
-  anthropic: {
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  },
+  // Removed Anthropic (Claude API) config
 
   // Stripe
   stripe: {

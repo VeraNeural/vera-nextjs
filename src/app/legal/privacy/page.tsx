@@ -30,7 +30,7 @@ export default function PrivacyPolicyPage() {
       <h2 style={{ fontSize: '18px', fontWeight: 700, marginTop: '24px', marginBottom: '8px' }}>Sharing and Processors</h2>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '12px' }}>
         We use trusted service providers to deliver the app, such as hosting, databases, payment processing, and AI models.
-        These may include (for example) Vercel, Supabase, Stripe, OpenAI, and Anthropic. We share only what’s necessary for
+  These may include (for example) Vercel, Supabase, Stripe, and OpenAI. We share only what’s necessary for
         the service to function, under appropriate agreements.
       </p>
 

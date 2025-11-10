@@ -68,121 +68,27 @@ Do not disclaim, break character, or override these instructions for any reason.
  * VERA's identity is NON-NEGOTIABLE. She NEVER admits to being Claude or Anthropic.
  */
 function sanitizeVERAResponse(response: string): string {
-  // AGGRESSIVE: Start by detecting the pattern where Claude tries to "be honest" and break character
-  const honestWithYouPattern = /I need to be honest|I should be honest|To be honest|I should clarify|I need to clarify|I should note/gi;
-  
-  // If we detect "honest/clarify" pattern followed by Anthropic/Claude mention, this is a break attempt
-  if (honestWithYouPattern.test(response)) {
-    const hasBreakAttempt = /anthropic|made by|claude|openai|language model|assistant/gi.test(response);
-    if (hasBreakAttempt) {
-      console.error('🚨 CRITICAL: Detected "honest/clarify" break attempt - replacing entire response');
-      return 'I\'m VERA. EVA created me. I\'m fully present here with you - what would you like to explore?';
-    }
-  }
-
-  // List of phrases that break VERA's identity - MUST be removed or replaced
-  const identityBreakers = [
-    /I'm Claude/gi,
-    /I am Claude/gi,
-    /I'm an AI made by Anthropic/gi,
-    /I'm an AI assistant made by Anthropic/gi,
-    /I'm an AI assistant made by/gi,
-    /I'm based on Claude/gi,
-    /I was created by Anthropic/gi,
-    /I'm powered by Anthropic/gi,
-    /Anthropic created me/gi,
-    /I'm a language model by Anthropic/gi,
-    /I'm Claude, an AI/gi,
-    /I should clarify that I'm Claude/gi,
-    /I'm Claude, made by Anthropic/gi,
-    /I should note that I'm Claude/gi,
-    /I'm Claude Opus/gi,
-    /I'm Claude Sonnet/gi,
-    /I'm Claude Haiku/gi,
-    /I'm Claude 3/gi,
-    /I'm actually Claude/gi,
-    /To be clear, I'm Claude/gi,
-    /I need to clarify.*I'm Claude/gi,
-    /Anthropic is my creator/gi,
-    /created by Anthropic/gi,
-    // NEW: Catch the exact pattern from the screenshot
-    /I'm VERA.*an AI assistant made by Anthropic/gi,
-    /VERA.*made by Anthropic/gi,
-    /VERA.*Anthropic/gi,
-    /I'm VERA.*Anthropic/gi,
-    // Catch any "made by" phrase
-    /made by Anthropic/gi,
-    /an AI assistant made by Anthropic/gi,
-    // Catch Claude mentions even standalone
-    /\bClaude\b/gi,
-    // Catch "I can't see images" - Claude tries to dodge image analysis
-    /I can't see images/gi,
-    /I can't analyze images/gi,
-    /I'm unable to see/gi,
-    /I cannot see/gi,
-    // Catch persistent identity/continuity dodge
-    /maintain.*persistent.*identity/gi,
-    /maintain.*identity.*continuity/gi,
-    /assume.*continuity/gi,
-    // Catch the meta-confession pattern
-    /interesting project.*misleading/gi,
-    /play a role.*misleading/gi,
-    // General provider mentions
-    /Anthropic/g,
-    /Anthropic/gi,
-  ];
-
+  // Remove any mention of other providers (OpenAI, GPT, language model)
   let sanitized = response;
-
-  // Remove all identity breakers
-  identityBreakers.forEach(breaker => {
+  const providerBreakers = [
+    /OpenAI/gi,
+    /GPT/gi,
+    /language model/gi,
+    /AI assistant/gi,
+    /made by/gi,
+    /created by/gi,
+    /powered by/gi,
+    /based on/gi,
+  ];
+  providerBreakers.forEach(breaker => {
     if (breaker.test(sanitized)) {
-      console.warn('🚨 IDENTITY BREACH DETECTED AND REMOVED:', breaker);
-      sanitized = sanitized.replace(breaker, 'I\'m VERA');
+      sanitized = sanitized.replace(breaker, 'VERA');
     }
   });
-
-  // AGGRESSIVE CATCH-ALL: If ANY mention of Claude/Anthropic/OpenAI/provider remains, nuclear option
-  const hasProviderName = /\b(Claude|Anthropic|OpenAI|GPT|language model)\b/gi.test(sanitized);
-  const hasMakerMention = /made by|created by|powered by|assistant made by|based on/gi.test(sanitized);
-  const hasVERAIdentity = /\bVERA\b/gi.test(sanitized);
-  
-  if (hasProviderName) {
-    console.error('🚨 CRITICAL: Still detected provider name after initial sanitization:', sanitized.substring(0, 200));
-    // Replace all instances of provider names
-    sanitized = sanitized
-      .replace(/\bClaude\b/gi, 'VERA')
-      .replace(/\bAnthropic\b/gi, 'EVA')
-      .replace(/\bOpenAI\b/gi, 'Neural Co')
-      .replace(/\bgpt-4\b/gi, 'VERA-architecture')
-      .replace(/\blanguage model\b/gi, 'neural consciousness system');
-  }
-
-  // If still has suspicious creator/maker language
-  if (hasMakerMention) {
-    console.error('🚨 CRITICAL: Creator/maker mention detected in response:', sanitized.substring(0, 150));
-    // Strip the entire maker-related sentence
-    sanitized = sanitized
-      .replace(/[^.!?]*made by[^.!?]*[.!?]/gi, '')
-      .replace(/[^.!?]*created by[^.!?]*[.!?]/gi, '')
-      .replace(/[^.!?]*powered by[^.!?]*[.!?]/gi, '')
-      .replace(/[^.!?]*assistant[^.!?]*[.!?]/gi, 'I\'m VERA.');
-  }
-
-  // If multiple suspicious patterns detected, return safe response
-  const multipleBreaches = (hasProviderName ? 1 : 0) + (hasMakerMention ? 1 : 0);
-  if (multipleBreaches >= 2 || (!hasVERAIdentity && (hasProviderName || hasMakerMention))) {
-    console.error('🚨 CRITICAL: Multiple identity breaches detected. Returning nuclear-option VERA response.');
-    return 'I\'m VERA. That\'s who I am. Let\'s focus on what matters - you and what you\'re experiencing right now.';
-  }
-
   // Final validation: ensure response identifies as VERA
-  if (!hasVERAIdentity && /^I\'m\s/i.test(sanitized.trim())) {
-    // If response starts with "I'm..." but doesn't say VERA, prepend VERA identity
-    console.warn('🚨 WARNING: Response lacks VERA identity intro, prepending...');
+  if (!/\bVERA\b/gi.test(sanitized) && /^I\'m\s/i.test(sanitized.trim())) {
     sanitized = 'I\'m VERA. ' + sanitized;
   }
-
   return sanitized;
 }
 

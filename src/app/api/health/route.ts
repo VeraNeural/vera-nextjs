@@ -17,19 +17,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const [config, session, supabase, anthropic, openai, resend] = await Promise.all([
-      check('/api/health/config'),
-      check('/api/health/session'),
-      check('/api/health/supabase'),
-      check('/api/health/anthropic?light=true'),
-      check('/api/health/openai?light=true'),
-      check('/api/health/resend?light=true'),
-    ]);
+      const [config, session, supabase, openai, resend] = await Promise.all([
+        check('/api/health/config'),
+        check('/api/health/session'),
+        check('/api/health/supabase'),
+        check('/api/health/openai?light=true'),
+        check('/api/health/resend?light=true'),
+      ]);
 
     return NextResponse.json({
-      ok: config.ok && supabase.ok && anthropic.ok && openai.ok && resend.ok,
+        ok: config.ok && supabase.ok && openai.ok && resend.ok,
       origin,
-      checks: { config, session, supabase, anthropic, openai, resend },
+        checks: { config, session, supabase, openai, resend },
     });
   } catch (error) {
     console.error('Health summary error:', error);

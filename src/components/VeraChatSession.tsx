@@ -8,27 +8,37 @@ import { elevenlabsTTS } from "./tts-elevenlabs";
 
 type TTSProvider = "openai" | "elevenlabs";
 
-export default function VeraChatSession({ elevenLabsApiKey }: { elevenLabsApiKey: string }) {
+export default function VeraChatSession({ elevenLabsApiKey, elevenLabsVoiceId }: { elevenLabsApiKey: string, elevenLabsVoiceId: string }) {
   const [history, setHistory] = useState<{ from: string; message: string }[]>([]);
   const [pending, setPending] = useState(false);
   const [ttsProvider, setTTSProvider] = useState<TTSProvider>("openai");
+  const [ttsError, setTTSError] = useState<string | null>(null);
 
   // TTS for latest VERA message
   React.useEffect(() => {
     const last = history[history.length - 1];
     if (!last || last.from !== "VERA") return;
+    setTTSError(null);
     if (ttsProvider === "openai") {
-      openaiTTS(last.message).then((audioUrl: string) => {
-        const audio = new Audio(audioUrl);
-        audio.play();
-      });
+      openaiTTS(last.message)
+        .then((audioUrl: string) => {
+          const audio = new Audio(audioUrl);
+          audio.play();
+        })
+        .catch((err: any) => {
+          setTTSError("OpenAI TTS error: " + (err?.message || err?.toString()));
+        });
     } else if (ttsProvider === "elevenlabs") {
-      elevenlabsTTS(last.message, elevenLabsApiKey).then((audioUrl: string) => {
-        const audio = new Audio(audioUrl);
-        audio.play();
-      });
+      elevenlabsTTS(last.message, elevenLabsApiKey, elevenLabsVoiceId)
+        .then((audioUrl: string) => {
+          const audio = new Audio(audioUrl);
+          audio.play();
+        })
+        .catch((err: any) => {
+          setTTSError("ElevenLabs TTS error: " + (err?.message || err?.toString()));
+        });
     }
-  }, [history, elevenLabsApiKey, ttsProvider]);
+  }, [history, elevenLabsApiKey, elevenLabsVoiceId, ttsProvider]);
 
   async function handleSend({ text, images }: { text: string; images: File[] }) {
     setPending(true);
@@ -47,6 +57,11 @@ export default function VeraChatSession({ elevenLabsApiKey }: { elevenLabsApiKey
           <option value="elevenlabs">ElevenLabs TTS</option>
         </select>
       </div>
+      {ttsError && (
+        <div style={{ color: 'red', marginBottom: 8 }}>
+          <strong>TTS Error:</strong> {ttsError}
+        </div>
+      )}
       {history.map((msg, idx) => (
         <VeraResponseViewer key={idx} response={msg.message} />
       ))}
@@ -56,27 +71,3 @@ export default function VeraChatSession({ elevenLabsApiKey }: { elevenLabsApiKey
   );
 }
 
-export default function VeraChatSession({ elevenLabsApiKey }: { elevenLabsApiKey: string }) {
-  const [history, setHistory] = useState<{ from: string; message: string }[]>([]);
-  const [pending, setPending] = useState(false);
-
-  // TTS temporarily disabled for Hume AI testing
-
-  async function handleSend({ text, images }: { text: string; images: File[] }) {
-    setPending(true);
-    setHistory(h => [...h, { from: "USER", message: text }]);
-    const response = await sendToVERA({ text, images });
-    setHistory(h => [...h, { from: "VERA", message: response }]);
-    setPending(false);
-  }
-
-  return (
-    <div>
-      {history.map((msg, idx) => (
-        <VeraResponseViewer key={idx} response={msg.message} />
-      ))}
-      <ImageUploadChat onSend={handleSend} />
-      {pending && <div>VERA is thinking...</div>}
-    </div>
-  );
-}
