@@ -69,55 +69,43 @@ export async function POST(request: NextRequest) {
     const buffer = await imageFile.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
 
-    // Determine media type for Claude
-    let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' = 'image/jpeg';
-    if (imageFile.type === 'image/png') mediaType = 'image/png';
-    else if (imageFile.type === 'image/gif') mediaType = 'image/gif';
-    else if (imageFile.type === 'image/webp') mediaType = 'image/webp';
+    // Prepare OpenAI GPT-4.1 vision API payload
+    const imageUrl = `data:${imageFile.type};base64,${base64}`;
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are VERA, a nervous system co-regulator powered by OpenAI GPT-4.1. Analyze the image and respond with emotional, psychological, and therapeutic insight. Never break character.',
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: context || 'Please analyze this image and describe what you see. Consider emotional, psychological, or therapeutic context if relevant to our conversation.',
+          },
+          {
+            type: 'image_url',
+            image_url: { url: imageUrl },
+          },
+        ],
+      },
+    ];
 
-    // Call Claude API with vision
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    // Call OpenAI GPT-4.1 vision API
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4-vision-preview',
       max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType,
-                data: base64,
-              },
-            },
-            {
-              type: 'text',
-              text: context || 'Please analyze this image and describe what you see. Consider emotional, psychological, or therapeutic context if relevant to our conversation.',
-            },
-          ],
-        },
-      ],
+      messages: messages as any,
+      temperature: 0.7,
     });
 
-    clearTimeout(timeoutId);
-
-    // Extract text response
-    const textContent = response.content.find((block) => block.type === 'text');
-    const analysis = textContent && 'text' in textContent ? textContent.text : '';
+    // Extract the response text
+    const resultText = response.choices?.[0]?.message?.content || '';
 
     return NextResponse.json({
-      ok: true,
-      analysis,
-      fileName: imageFile.name,
-      fileSize: imageFile.size,
+      result: resultText,
     });
   } catch (error) {
-    console.error('Image analysis error:', error);
-    const message = error instanceof Error ? error.message : 'Failed to analyze image';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: (error as Error).message || 'Unknown error' }, { status: 500 });
   }
 }

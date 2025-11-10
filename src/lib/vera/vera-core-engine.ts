@@ -23,7 +23,7 @@ import {
   VERAResponse,
 } from './types';
 
-import { generateConversationalPrompt } from './conversational-mode';
+import { generateConversationalPrompt, generateRevolutionaryVERAPrompt } from './conversational-mode';
 import {
   analyzeDecodeRequest,
   generateDecodePrompt,
@@ -113,6 +113,14 @@ export class VERACoreEngine {
    * Main entry point: Process user message and generate VERA response
    */
   async processMessage(userMessage: string): Promise<VERAResponse> {
+    // STEP 0: HUME AI EMOTION/AFFECT ANALYSIS
+    let humeAIResult: any = null;
+    try {
+      const { analyzeWithHumeAI } = await import('../../lib/humeAI');
+      humeAIResult = await analyzeWithHumeAI({ text: userMessage });
+    } catch (err) {
+      humeAIResult = { error: (err instanceof Error ? err.message : 'Unknown error') };
+    }
     const startTime = Date.now();
 
     // STEP 1: CRISIS DETECTION (highest priority - overrides everything)
@@ -152,12 +160,45 @@ export class VERACoreEngine {
       this.session.sessionMetrics.decodeRequests++;
     } else {
       // CONVERSATIONAL MODE (default)
-      prompt = generateConversationalPrompt(
+      // Map somaticPatterns array to expected object shape
+      const somaticPatternsObj: any = {};
+      for (const pattern of this.session.userProfile.somaticPatterns) {
+        if (pattern.pattern === 'jawTension') {
+          somaticPatternsObj.jawTension = {
+            triggers: pattern.triggers,
+            successfulInterventions: pattern.successfulInterventions,
+          };
+        }
+        if (pattern.pattern === 'dissociationTriggers') {
+          somaticPatternsObj.dissociationTriggers = pattern.triggers;
+        }
+        if (pattern.pattern === 'hypervigilanceWindows') {
+          somaticPatternsObj.hypervigilanceWindows = pattern.triggers;
+        }
+        if (pattern.pattern === 'shutdownSignals') {
+          somaticPatternsObj.shutdownSignals = pattern.triggers;
+        }
+        if (pattern.pattern === 'coRegulationAnchors') {
+          somaticPatternsObj.coRegulationAnchors = pattern.triggers;
+        }
+      }
+      const veraPromptProfile = {
+        ...this.session.userProfile,
+        somaticPatterns: somaticPatternsObj,
+        adaptiveStrategies: (this.session.userProfile.adaptiveStrategies || []).map((s) => s.strategy),
+        whatWorks: this.session.userProfile.metaLearning?.whatWorks || [],
+        whatDoesnt: this.session.userProfile.metaLearning?.whatDoesnt || [],
+        vulnerabilityWindows: (this.session.userProfile.vulnerabilityWindows || []).map((v) => ({
+          time: v.timeOfDay || '',
+          pattern: v.pattern || '',
+        })),
+      };
+      prompt = generateRevolutionaryVERAPrompt(
         userMessage,
         this.session.conversationHistory,
-        this.session.userProfile,
-        adaptiveCodes,
-        quantumStateDescription
+        adaptiveCodes.map((c) => c.code),
+        quantumStateDescription,
+        veraPromptProfile
       );
     }
 
@@ -202,6 +243,7 @@ export class VERACoreEngine {
       metadata: {
         timestamp: new Date(),
         responseTime,
+        humeAI: humeAIResult,
       },
       suggestions: {
         regulationTechniques,
