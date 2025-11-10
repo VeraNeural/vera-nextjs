@@ -262,6 +262,7 @@ export async function generateVoiceAwareResponse(
   }
 
   // Call ElevenLabs API
+  const ttsStart = Date.now();
   const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/YOUR_VOICE_ID', {
     method: 'POST',
     headers: {
@@ -275,10 +276,15 @@ export async function generateVoiceAwareResponse(
       voice_settings: voiceSettings,
     }),
   });
+  const ttsEnd = Date.now();
+  console.log(`[VERA TTS] ElevenLabs API call took ${((ttsEnd-ttsStart)/1000).toFixed(2)} seconds`);
 
+  const blobStart = Date.now();
   const audioBlob = await response.blob();
-  const audioUrl = URL.createObjectURL(audioBlob);
+  const blobEnd = Date.now();
+  console.log(`[VERA TTS] response.blob() took ${((blobEnd-blobStart)/1000).toFixed(2)} seconds`);
 
+  const audioUrl = URL.createObjectURL(audioBlob);
   return { audioUrl, voiceSettings };
 }
 
