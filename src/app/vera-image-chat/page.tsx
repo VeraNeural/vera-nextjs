@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import ImageUploadChat from '../../components/ImageUploadChat';
 import VeraResponseViewer from '../../components/VeraResponseViewer';

@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import ImageUploadChat from "./ImageUploadChat";
 import VeraResponseViewer from "./VeraResponseViewer";
@@ -8,15 +9,7 @@ export default function VeraChatSession({ elevenLabsApiKey }: { elevenLabsApiKey
   const [history, setHistory] = useState<{ from: string; message: string }[]>([]);
   const [pending, setPending] = useState(false);
 
-  // TTS for latest VERA message
-  React.useEffect(() => {
-    const last = history[history.length - 1];
-    if (!last || last.from !== "VERA") return;
-    elevenlabsTTS(last.message, elevenLabsApiKey).then(audioUrl => {
-      const audio = new Audio(audioUrl);
-      audio.play();
-    });
-  }, [history, elevenLabsApiKey]);
+  // TTS temporarily disabled for Hume AI testing
 
   async function handleSend({ text, images }: { text: string; images: File[] }) {
     setPending(true);

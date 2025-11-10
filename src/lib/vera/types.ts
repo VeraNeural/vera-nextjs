@@ -35,6 +35,7 @@ export interface VERAResponse {
     timestamp: Date;
     responseTime?: number;
     tokensUsed?: number;
+    humeAI?: any;
   };
   suggestions?: {
     regulationTechniques?: string[];

@@ -32,7 +32,8 @@ export async function sendToVERA({ text, images }: { text: string; images: File[
     headers: { "Authorization": `Bearer ${process.env.OPENAI_API_KEY}` }
   });
 
-  return response.data.choices[0].message.content;
+  const data = response.data as any;
+  return data.choices[0].message.content;
 }
 
 function imgToBase64(file: File): Promise<string> {
