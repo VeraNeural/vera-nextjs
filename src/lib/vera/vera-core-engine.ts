@@ -157,8 +157,7 @@ export class VERACoreEngine {
         this.session.conversationHistory,
         this.session.userProfile,
         adaptiveCodes,
-        quantumStateDescription,
-        new Date()
+        quantumStateDescription
       );
     }
 

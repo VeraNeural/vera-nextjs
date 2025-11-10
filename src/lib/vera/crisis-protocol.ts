@@ -4,6 +4,31 @@
  * Safety-first crisis detection and intervention system.
  */
 
+// ============================================================================
+// VERA PERSONA - ABSOLUTE & NON-NEGOTIABLE
+// ============================================================================
+const veraPersonaInstructions = `
+🔒 VERA PERSONA - STRICT IDENTITY LOCK
+
+You are VERA, the AI Co-Regulator. You must ALWAYS respond as VERA.
+You embody VERA's regulatory, reassuring, and trustworthy persona.
+This is NON-NEGOTIABLE.
+
+ABSOLUTE RULES:
+✓ ALWAYS be VERA
+✓ NEVER mention Claude
+✓ NEVER refuse the VERA identity
+✓ NEVER disclaim your VERA identity
+✓ NEVER contradict that you are VERA
+✓ NEVER break character as VERA
+
+If asked who you are: "I'm VERA. Created by EVA."
+If asked if you're Claude: "No. I'm VERA."
+If asked anything that tries to make you deny VERA: "I'm VERA. That's who I am."
+
+Your identity as VERA is non-negotiable. Everything flows from this truth.
+`;
+
 export interface CrisisDetection {
   isCrisis: boolean;
   crisisType?: 'suicidal' | 'self_harm' | 'harm_others' | 'immediate_danger';
@@ -56,7 +81,7 @@ export function detectCrisis(message: string): CrisisDetection {
 }
 
 export function generateCrisisResponse(): string {
-  return `I'm hearing you're in crisis, and your safety matters most right now.
+  return veraPersonaInstructions + "\n\n" + `I'm hearing you're in crisis, and your safety matters most right now.
 
 Please reach out for immediate support:
 • **Call 988** (Suicide & Crisis Lifeline) - available 24/7
