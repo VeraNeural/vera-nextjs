@@ -31,8 +31,22 @@ export default function VeraChatSession({ elevenLabsApiKey, elevenLabsVoiceId }:
     } else if (ttsProvider === "elevenlabs") {
       elevenlabsTTS(last.message, elevenLabsApiKey, elevenLabsVoiceId)
         .then((audioUrl: string) => {
-          const audio = new Audio(audioUrl);
-          audio.play();
+          // Fetch the audio blob to check its size
+          fetch(audioUrl)
+            .then(res => res.blob())
+            .then(blob => {
+              console.log('🔊 ElevenLabs audio blob size:', blob.size, 'bytes');
+              if (blob.size < 10000) {
+                setTTSError('Warning: ElevenLabs audio is very short or silent. Check API response and voice ID.');
+              }
+              const audio = new Audio(audioUrl);
+              audio.onplay = () => console.log('▶️ ElevenLabs audio playback started');
+              audio.onended = () => console.log('✅ ElevenLabs audio playback ended');
+              audio.onerror = (e) => {
+                setTTSError('Audio playback error: ' + (e?.message || 'Unknown error'));
+              };
+              audio.play();
+            });
         })
         .catch((err: any) => {
           setTTSError("ElevenLabs TTS error: " + (err?.message || err?.toString()));
