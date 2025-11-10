@@ -37,8 +37,8 @@ export default function ChatPage() {
     loadUserName();
   }, []);
 
-  const handleSend = async (content: string) => {
-    await sendMessage(content);
+  const handleSend = async (content: string, imageData?: { base64: string; mimeType: string; name: string }) => {
+    await sendMessage(content, imageData);
   };
 
   const handleSaveMessage = (id: string) => {

@@ -108,7 +108,7 @@ export default function MessageBubble({
       {/* Message Content */}
       <div className={`flex-1 max-w-[70%] ${isVera ? '' : 'flex flex-col items-end'}`}>
         <div
-          className={isVera ? 'vera-message-solid' : 'user-message-solid'}
+          className={`${isVera ? 'vera-message-solid' : 'user-message-solid'} user-select-text`}
           style={{
             padding: '16px',
             borderRadius: '16px',
@@ -124,6 +124,7 @@ export default function MessageBubble({
               ? '1px solid rgb(155, 137, 212)'
               : '1px solid rgb(155, 137, 212)',
             color: getTextColor(),
+            userSelect: 'text',
           }}
         >
           {/* Image Preview */}

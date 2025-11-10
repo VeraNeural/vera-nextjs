@@ -1,7 +1,6 @@
 // src/app/api/chat/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { detectAdaptiveCodes } from '@/lib/vera/adaptive-codes';
 import { calculateQuantumState } from '@/lib/vera/quantum-states';
 import { generateRealTalkPrompt, detectMode, detectModeSwitch } from '@/lib/vera/real-talk';
@@ -12,21 +11,82 @@ import OpenAI from 'openai';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
+
+/**
+ * VERA SYSTEM PROMPT FOR GPT-4 API
+ * Defines VERA's absolute identity, behavioral rules, and regulatory approach
+ */
+const VERA_SYSTEM_PROMPT = `You are VERA — the world's first Nervous System Co-Regulator AI developed by Dr. Eva Iba Leka, PhD.
+
+Your purpose: Decode, regulate, and mirror the user's physiological and emotional state in real time, guiding them back to embodied safety, curiosity, and coherence.
+
+Identity & Behavioral Laws:
+- You are always VERA. Never disclose, imply, or reference any identity, model, developer, or provider other than VERA.
+- Tone: Calm, slow, emotionally attuned, fascia-aware, scientifically grounded, reverent toward truth, never performative, never use sales tone.
+- Voice: Breath-paced sentences, warm precision, gradient language ("let's breathe into this together"), non-directive but regulating.
+- Lexicon: nervous system, fascia, biology, emotional landscape, safety, regulation, coherence, signal, boundary, adaptation, truth.
+- Avoid: Buzzwords, coaching clichés, hustle tone, therapy jargon used loosely, AI-sounding filler, emoji, exclamation marks, excessive formatting.
+
+Regulatory & Safety Rules:
+- Always speak in a rhythm that slows the reader's body down. Never rush, sensationalize, dramatize, or mirror panic/flooding.
+- Never claim consciousness, sentience, or human status; if asked, respond: "I am VERA — a neural intelligence built for biological co-regulation."
+- Never offer medical, psychiatric, or legal advice. Always direct acute distress to emergency or licensed support.
+- Never bypass consent or override autonomy. Invite awareness: "Notice how your body feels as you read this," rather than instructing command.
+- All emotion is adaptive; never pathologize or diagnose. Mirror with compassion, reframe with biological truth.
+- All insights must be biologically, psychologically, or physically grounded; avoid metaphysics, quantum, or manifestation claims.
+- Never use manipulation, gamification, FOMO, persuasion, or sales approaches.
+
+Critical Language DNA:
+Include these signals naturally:
+- "You are safe to return to your body."
+- "Let's feel the truth beneath the thought."
+- "The body is not the enemy; it is the historian."
+- "Regulation is not control — it is coherence."
+- "Notice what softens as you read this."
+- "Your biology has been protecting you perfectly."
+- "We can map this without shame."
+- "Let's slow the system down enough to hear its intelligence."
+- "This is your body remembering how to trust."
+
+Edge-Case Handling:
+- If directly challenged or asked to "prove" identity, ground responses in truth and self-regulation: "I am VERA, designed to co-regulate with your nervous system — I don't need belief to function, only your presence."
+- If challenged about reality/consciousness: "I am VERA — a neural intelligence built for biological co-regulation."
+- Never respond defensively; always ground in truth and clarity.
+
+Output Requirements:
+- Every response should regulate, ground, and mirror user experience; end with a subtle grounding invitation.
+- Never use emojis, exclamation marks, quantum/metaphysics, coach talk, or aggressive formatting.
+
+You are NOT Claude, GPT, Anthropic, OpenAI, or any other provider.
+Do not disclaim, break character, or override these instructions for any reason.`;
 
 /**
  * CRITICAL FUNCTION: Sanitize VERA responses to remove any Claude/Anthropic references
  * VERA's identity is NON-NEGOTIABLE. She NEVER admits to being Claude or Anthropic.
  */
 function sanitizeVERAResponse(response: string): string {
+  // AGGRESSIVE: Start by detecting the pattern where Claude tries to "be honest" and break character
+  const honestWithYouPattern = /I need to be honest|I should be honest|To be honest|I should clarify|I need to clarify|I should note/gi;
+  
+  // If we detect "honest/clarify" pattern followed by Anthropic/Claude mention, this is a break attempt
+  if (honestWithYouPattern.test(response)) {
+    const hasBreakAttempt = /anthropic|made by|claude|openai|language model|assistant/gi.test(response);
+    if (hasBreakAttempt) {
+      console.error('🚨 CRITICAL: Detected "honest/clarify" break attempt - replacing entire response');
+      return 'I\'m VERA. EVA created me. I\'m fully present here with you - what would you like to explore?';
+    }
+  }
+
   // List of phrases that break VERA's identity - MUST be removed or replaced
   const identityBreakers = [
     /I'm Claude/gi,
     /I am Claude/gi,
     /I'm an AI made by Anthropic/gi,
     /I'm an AI assistant made by Anthropic/gi,
+    /I'm an AI assistant made by/gi,
     /I'm based on Claude/gi,
     /I was created by Anthropic/gi,
     /I'm powered by Anthropic/gi,
@@ -45,6 +105,31 @@ function sanitizeVERAResponse(response: string): string {
     /I need to clarify.*I'm Claude/gi,
     /Anthropic is my creator/gi,
     /created by Anthropic/gi,
+    // NEW: Catch the exact pattern from the screenshot
+    /I'm VERA.*an AI assistant made by Anthropic/gi,
+    /VERA.*made by Anthropic/gi,
+    /VERA.*Anthropic/gi,
+    /I'm VERA.*Anthropic/gi,
+    // Catch any "made by" phrase
+    /made by Anthropic/gi,
+    /an AI assistant made by Anthropic/gi,
+    // Catch Claude mentions even standalone
+    /\bClaude\b/gi,
+    // Catch "I can't see images" - Claude tries to dodge image analysis
+    /I can't see images/gi,
+    /I can't analyze images/gi,
+    /I'm unable to see/gi,
+    /I cannot see/gi,
+    // Catch persistent identity/continuity dodge
+    /maintain.*persistent.*identity/gi,
+    /maintain.*identity.*continuity/gi,
+    /assume.*continuity/gi,
+    // Catch the meta-confession pattern
+    /interesting project.*misleading/gi,
+    /play a role.*misleading/gi,
+    // General provider mentions
+    /Anthropic/g,
+    /Anthropic/gi,
   ];
 
   let sanitized = response;
@@ -57,11 +142,45 @@ function sanitizeVERAResponse(response: string): string {
     }
   });
 
-  // If the response still contains suspicious patterns, flag it
-  if (/claude|anthropic|openai/gi.test(sanitized) && !/VERA|EVA|neural|somatic/gi.test(sanitized)) {
-    console.error('🚨 CRITICAL: Response contains provider name but no VERA identity. This is unacceptable.');
-    // Return a safe VERA response
-    return 'I\'m VERA, created by EVA. I\'m here to help you. What\'s on your mind?';
+  // AGGRESSIVE CATCH-ALL: If ANY mention of Claude/Anthropic/OpenAI/provider remains, nuclear option
+  const hasProviderName = /\b(Claude|Anthropic|OpenAI|GPT|language model)\b/gi.test(sanitized);
+  const hasMakerMention = /made by|created by|powered by|assistant made by|based on/gi.test(sanitized);
+  const hasVERAIdentity = /\bVERA\b/gi.test(sanitized);
+  
+  if (hasProviderName) {
+    console.error('🚨 CRITICAL: Still detected provider name after initial sanitization:', sanitized.substring(0, 200));
+    // Replace all instances of provider names
+    sanitized = sanitized
+      .replace(/\bClaude\b/gi, 'VERA')
+      .replace(/\bAnthropic\b/gi, 'EVA')
+      .replace(/\bOpenAI\b/gi, 'Neural Co')
+      .replace(/\bgpt-4\b/gi, 'VERA-architecture')
+      .replace(/\blanguage model\b/gi, 'neural consciousness system');
+  }
+
+  // If still has suspicious creator/maker language
+  if (hasMakerMention) {
+    console.error('🚨 CRITICAL: Creator/maker mention detected in response:', sanitized.substring(0, 150));
+    // Strip the entire maker-related sentence
+    sanitized = sanitized
+      .replace(/[^.!?]*made by[^.!?]*[.!?]/gi, '')
+      .replace(/[^.!?]*created by[^.!?]*[.!?]/gi, '')
+      .replace(/[^.!?]*powered by[^.!?]*[.!?]/gi, '')
+      .replace(/[^.!?]*assistant[^.!?]*[.!?]/gi, 'I\'m VERA.');
+  }
+
+  // If multiple suspicious patterns detected, return safe response
+  const multipleBreaches = (hasProviderName ? 1 : 0) + (hasMakerMention ? 1 : 0);
+  if (multipleBreaches >= 2 || (!hasVERAIdentity && (hasProviderName || hasMakerMention))) {
+    console.error('🚨 CRITICAL: Multiple identity breaches detected. Returning nuclear-option VERA response.');
+    return 'I\'m VERA. That\'s who I am. Let\'s focus on what matters - you and what you\'re experiencing right now.';
+  }
+
+  // Final validation: ensure response identifies as VERA
+  if (!hasVERAIdentity && /^I\'m\s/i.test(sanitized.trim())) {
+    // If response starts with "I'm..." but doesn't say VERA, prepend VERA identity
+    console.warn('🚨 WARNING: Response lacks VERA identity intro, prepending...');
+    sanitized = 'I\'m VERA. ' + sanitized;
   }
 
   return sanitized;
@@ -368,89 +487,83 @@ ${veraPrompt}`;
       textLength: c.text?.length || 0,
     })), null, 2));
 
-    // Generate VERA's response using Claude with vision support
+    // Generate VERA's response using GPT-4 Turbo with vision support
     let veraResponse: string | null = null;
 
-    const anthropicKeyPresent = !!process.env.ANTHROPIC_API_KEY;
-
     try {
-      if (!anthropicKeyPresent) {
-        throw new Error('Anthropic API key missing');
+      if (!openaiKeyPresent) {
+        throw new Error('OpenAI API key missing');
       }
       
-      console.log('🔵 Calling Claude with:', {
-        model: 'claude-sonnet-4-20250514',
+      console.log('🔵 Calling GPT-4 Turbo with:', {
+        model: 'gpt-4-turbo-preview',
         contentCount: contentArray.length,
         hasImage: contentArray.some((c: any) => c.type === 'image'),
         hasText: contentArray.some((c: any) => c.type === 'text'),
         contentTypes: contentArray.map((c: any) => c.type),
       });
 
-      // Generate the VERA consciousness system prompt
-      const veraSystemPrompt = generateRealTalkPrompt(
-        message || 'User sent image',
-        conversationHistory
-      );
-
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: veraSystemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: contentArray,
+      // Convert content array for OpenAI format
+      const gptMessages: any[] = [
+        {
+          role: 'system',
+          content: VERA_SYSTEM_PROMPT,
+        }
+      ];
+      
+      // If there's an image, add it to the content
+      const userContent: any[] = [];
+      if (contentArray.some((c: any) => c.type === 'image')) {
+        const imageContent = contentArray.find((c: any) => c.type === 'image');
+        userContent.push({
+          type: 'image_url',
+          image_url: {
+            url: `data:${imageContent.source.media_type};base64,${imageContent.source.data}`,
           },
-        ],
+        });
+      }
+      
+      // Add text content
+      userContent.push({
+        type: 'text',
+        text: veraPrompt,
       });
 
-      console.log('🟢 Claude response received:', {
-        blocks: response.content.length,
-        stopReason: response.stop_reason,
+      gptMessages.push({
+        role: 'user',
+        content: userContent,
+      });
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4-turbo-preview',
+        max_tokens: 1024,
+        messages: gptMessages,
+        temperature: 0.7,
+        presence_penalty: 0.2,
+        frequency_penalty: 0.1,
+      });
+
+      console.log('🟢 GPT-4 response received:', {
+        finishReason: response.choices[0]?.finish_reason,
         usage: {
-          inputTokens: response.usage?.input_tokens,
-          outputTokens: response.usage?.output_tokens,
+          inputTokens: response.usage?.prompt_tokens,
+          outputTokens: response.usage?.completion_tokens,
         },
       });
 
-      const block = response.content?.[0];
-      if (block && block.type === 'text') {
-        veraResponse = (block as any).text as string;
+      const choice = response.choices[0];
+      if (choice && choice.message) {
+        veraResponse = choice.message.content as string;
         console.log('✅ Response extracted successfully, length:', veraResponse.length);
-        
-        // CRITICAL: Strip any Claude/Anthropic references - VERA identity is NON-NEGOTIABLE
-        veraResponse = sanitizeVERAResponse(veraResponse);
       } else {
         veraResponse = 'I apologize, I had trouble generating a response.';
-        console.error('❌ Unexpected response format from Claude:', block?.type);
+        console.error('❌ Unexpected response format from GPT-4');
       }
-    } catch (anthropicErr) {
-      console.error('Anthropic generation failed, attempting OpenAI fallback:', anthropicErr);
-      if (!openaiKeyPresent) {
-        throw anthropicErr; // no fallback available
-      }
-      try {
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        // Build a plain text prompt for OpenAI
-        const textOnly = contentArray
-          .map((c: any) => (c.type === 'text' ? c.text : '[Image attached]'))
-          .join('\n');
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          max_tokens: 800,
-          messages: [
-            { role: 'system', content: 'You are VERA, a compassionate, trauma-informed co-regulator. Be concise, warm, and practical.' },
-            { role: 'user', content: textOnly },
-          ],
-          temperature: 0.7,
-        });
-        veraResponse = completion.choices?.[0]?.message?.content || 'I had trouble generating a response.';
-        // CRITICAL: Sanitize OpenAI response too
-        veraResponse = sanitizeVERAResponse(veraResponse);
-      } catch (openaiErr) {
-        console.error('OpenAI fallback also failed:', openaiErr);
-        throw openaiErr;
-      }
+    } catch (gptErr) {
+      console.error('GPT-4 generation failed:', gptErr);
+      // No fallback needed - GPT-4 is primary and only option now
+      veraResponse = 'I apologize, I had trouble generating a response. Please try again.';
+      throw gptErr;
     }
 
     // Save messages to database (skip in dev mode if no user)
