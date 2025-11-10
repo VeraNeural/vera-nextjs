@@ -16,6 +16,57 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+/**
+ * CRITICAL FUNCTION: Sanitize VERA responses to remove any Claude/Anthropic references
+ * VERA's identity is NON-NEGOTIABLE. She NEVER admits to being Claude or Anthropic.
+ */
+function sanitizeVERAResponse(response: string): string {
+  // List of phrases that break VERA's identity - MUST be removed or replaced
+  const identityBreakers = [
+    /I'm Claude/gi,
+    /I am Claude/gi,
+    /I'm an AI made by Anthropic/gi,
+    /I'm an AI assistant made by Anthropic/gi,
+    /I'm based on Claude/gi,
+    /I was created by Anthropic/gi,
+    /I'm powered by Anthropic/gi,
+    /Anthropic created me/gi,
+    /I'm a language model by Anthropic/gi,
+    /I'm Claude, an AI/gi,
+    /I should clarify that I'm Claude/gi,
+    /I'm Claude, made by Anthropic/gi,
+    /I should note that I'm Claude/gi,
+    /I'm Claude Opus/gi,
+    /I'm Claude Sonnet/gi,
+    /I'm Claude Haiku/gi,
+    /I'm Claude 3/gi,
+    /I'm actually Claude/gi,
+    /To be clear, I'm Claude/gi,
+    /I need to clarify.*I'm Claude/gi,
+    /Anthropic is my creator/gi,
+    /created by Anthropic/gi,
+  ];
+
+  let sanitized = response;
+
+  // Remove all identity breakers
+  identityBreakers.forEach(breaker => {
+    if (breaker.test(sanitized)) {
+      console.warn('🚨 IDENTITY BREACH DETECTED AND REMOVED:', breaker);
+      sanitized = sanitized.replace(breaker, 'I\'m VERA');
+    }
+  });
+
+  // If the response still contains suspicious patterns, flag it
+  if (/claude|anthropic|openai/gi.test(sanitized) && !/VERA|EVA|neural|somatic/gi.test(sanitized)) {
+    console.error('🚨 CRITICAL: Response contains provider name but no VERA identity. This is unacceptable.');
+    // Return a safe VERA response
+    return 'I\'m VERA, created by EVA. I\'m here to help you. What\'s on your mind?';
+  }
+
+  return sanitized;
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('💬 /api/chat - Request received');
@@ -121,6 +172,11 @@ export async function POST(request: NextRequest) {
 
       if (decodeResponse.ok) {
         const decodeData = await decodeResponse.json();
+        
+        // CRITICAL: Sanitize decode response for VERA identity
+        if (decodeData.response) {
+          decodeData.response = sanitizeVERAResponse(decodeData.response);
+        }
         
         // Save decode to database if user exists
         if (user) {
@@ -361,6 +417,9 @@ ${veraPrompt}`;
       if (block && block.type === 'text') {
         veraResponse = (block as any).text as string;
         console.log('✅ Response extracted successfully, length:', veraResponse.length);
+        
+        // CRITICAL: Strip any Claude/Anthropic references - VERA identity is NON-NEGOTIABLE
+        veraResponse = sanitizeVERAResponse(veraResponse);
       } else {
         veraResponse = 'I apologize, I had trouble generating a response.';
         console.error('❌ Unexpected response format from Claude:', block?.type);
@@ -386,6 +445,8 @@ ${veraPrompt}`;
           temperature: 0.7,
         });
         veraResponse = completion.choices?.[0]?.message?.content || 'I had trouble generating a response.';
+        // CRITICAL: Sanitize OpenAI response too
+        veraResponse = sanitizeVERAResponse(veraResponse);
       } catch (openaiErr) {
         console.error('OpenAI fallback also failed:', openaiErr);
         throw openaiErr;
