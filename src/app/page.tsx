@@ -19,14 +19,14 @@ export default function Home() {
           setIsAuthenticated(true);
           router.push('/chat-exact');
         } else {
-          // User is not authenticated, show landing page
-          setIsAuthenticated(false);
-          setIsChecking(false);
+          // User is not authenticated, redirect to login
+          router.push('/login');
         }
       } catch (error) {
         console.error('Auth check error:', error);
-        // If error, show landing page
-        setIsAuthenticated(false);
+        // If error, redirect to login
+        router.push('/login');
+      } finally {
         setIsChecking(false);
       }
     };
@@ -34,7 +34,7 @@ export default function Home() {
     checkAuth();
   }, [router]);
 
-  if (isChecking || isAuthenticated) {
+  if (isChecking) {
     return (
       <div style={{
         display: 'flex',
@@ -49,17 +49,5 @@ export default function Home() {
     );
   }
 
-  // Render the landing page iframe
-  return (
-    <iframe
-      src="/landing.html"
-      style={{
-        width: '100%',
-        height: '100vh',
-        border: 'none',
-        display: 'block',
-      }}
-      title="VERA Landing Page"
-    />
-  );
+  return null;
 }
