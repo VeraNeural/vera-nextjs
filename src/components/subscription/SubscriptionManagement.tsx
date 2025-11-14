@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Check, AlertCircle, Loader2 } from 'lucide-react';
+import type { PlanSlug } from '@/types/subscription';
 
 interface SubscriptionData {
   subscription_status: string | null;
@@ -44,17 +45,13 @@ export default function SubscriptionManagement() {
     }
   };
 
-  const handleUpgrade = async (plan: 'monthly' | 'yearly') => {
+  const handleUpgrade = async (plan: PlanSlug) => {
     setActionLoading(true);
     try {
-      const priceId = plan === 'monthly' 
-        ? process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY 
-        : process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY;
-
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ plan }),
       });
 
       const data = await response.json();
@@ -170,7 +167,7 @@ export default function SubscriptionManagement() {
           <div className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="border border-purple-200 rounded-xl p-6 hover:border-purple-400 transition-colors">
-                <h4 className="text-lg font-bold text-gray-900 mb-2">Monthly</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">Starter (Monthly)</h4>
                 <p className="text-3xl font-bold text-purple-600 mb-4">$12<span className="text-lg text-gray-500">/mo</span></p>
                 <ul className="space-y-2 mb-6 text-sm text-gray-600">
                   <li className="flex items-center gap-2">
@@ -187,7 +184,7 @@ export default function SubscriptionManagement() {
                   </li>
                 </ul>
                 <button
-                  onClick={() => handleUpgrade('monthly')}
+                  onClick={() => handleUpgrade('starter')}
                   disabled={actionLoading}
                   className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50"
                 >
@@ -199,7 +196,7 @@ export default function SubscriptionManagement() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-purple-500 text-white text-xs font-bold rounded-full">
                   BEST VALUE
                 </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">Yearly</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">Annual</h4>
                 <p className="text-3xl font-bold text-purple-600 mb-1">$99<span className="text-lg text-gray-500">/yr</span></p>
                 <p className="text-sm text-green-600 font-semibold mb-4">Save $45/year</p>
                 <ul className="space-y-2 mb-6 text-sm text-gray-600">
@@ -217,7 +214,7 @@ export default function SubscriptionManagement() {
                   </li>
                 </ul>
                 <button
-                  onClick={() => handleUpgrade('yearly')}
+                  onClick={() => handleUpgrade('annual')}
                   disabled={actionLoading}
                   className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50"
                 >

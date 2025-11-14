@@ -5,6 +5,8 @@ export interface TrialStatus {
   hasSubscription: boolean;
 }
 
+export type PlanSlug = 'starter' | 'pro' | 'annual' | 'enterprise';
+
 export interface SubscriptionPlan {
   id: string;
   name: string;

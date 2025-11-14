@@ -105,22 +105,42 @@ export async function POST(request: NextRequest) {
       // Try to create user entry using SERVICE CLIENT (bypasses RLS)
       console.log('🔧 Attempting to create missing user entry with service client...');
       const serviceClient = createServiceClient();
-      const { error: insertError } = await serviceClient.from('users').insert({
-        id: user.id,
-        email: user.email,
-        subscription_status: 'trialing',
-        trial_start: new Date().toISOString(),
-        trial_end: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-      });
 
-      if (insertError) {
-        console.error('❌ Failed to create user entry:', insertError);
-        return NextResponse.json(
-          { error: 'User setup failed', details: insertError.message },
-          { status: 500 }
-        );
+      if (serviceClient) {
+        const { error: insertError } = await serviceClient.from('users').insert({
+          id: user.id,
+          email: user.email,
+          subscription_status: 'trialing',
+          trial_start: new Date().toISOString(),
+          trial_end: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        });
+
+        if (insertError) {
+          console.error('❌ Failed to create user entry:', insertError);
+          return NextResponse.json(
+            { error: 'User setup failed', details: insertError.message },
+            { status: 500 }
+          );
+        }
+        console.log('✅ User entry created');
+      } else {
+        console.warn('⚠️  Service client unavailable; attempting user bootstrap via session client.');
+        const { error: fallbackInsertError } = await supabase.from('users').upsert({
+          id: user.id,
+          email: user.email,
+          subscription_status: 'trialing',
+          trial_start: new Date().toISOString(),
+          trial_end: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        });
+
+        if (fallbackInsertError) {
+          console.error('❌ Fallback user upsert failed:', fallbackInsertError);
+          return NextResponse.json(
+            { error: 'User setup failed', details: fallbackInsertError.message },
+            { status: 500 }
+          );
+        }
       }
-      console.log('✅ User entry created');
     }
 
     // Enforce subscription/trial access (after ensuring user row exists)

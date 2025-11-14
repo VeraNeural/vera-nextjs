@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import BreathingOrb from '@/components/orb/BreathingOrb';
 import { useTrial as useSubscriptionTrial } from '@/hooks/useTrial';
 import { useAuth } from '@/hooks/useAuth';
+import type { PlanSlug } from '@/types/subscription';
 
 interface Thread {
   id: string;
@@ -191,9 +192,9 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
     }
   };
 
-  const handleUpgrade = async (plan: 'monthly' | 'annual') => {
+  const handleUpgrade = async (plan: PlanSlug) => {
     try {
-      const res = await fetch('/api/billing/checkout', {
+      const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
@@ -412,8 +413,8 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
             </button>
           ) : (
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => handleUpgrade('monthly')}
+                <button
+                  onClick={() => handleUpgrade('starter')}
                 style={{
                   flex: 1,
                   padding: '10px',
@@ -431,8 +432,8 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
               >
                 Upgrade
               </button>
-              <button
-                onClick={() => handleUpgrade('annual')}
+                <button
+                  onClick={() => handleUpgrade('annual')}
                 style={{
                   flex: 0.5,
                   padding: '10px',

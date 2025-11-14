@@ -123,10 +123,10 @@ export default function TrialBannerExact({
       <button
         onClick={async () => {
           try {
-            const response = await fetch('/api/billing/checkout', {
+            const response = await fetch('/api/stripe/create-checkout', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ plan: 'monthly' }),
+              body: JSON.stringify({ plan: 'starter' }),
             });
             const data = await response.json();
             if (data.url) {

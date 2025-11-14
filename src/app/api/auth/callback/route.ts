@@ -137,16 +137,34 @@ export async function GET(request: NextRequest) {
   // Create user in database if needed
   if (userData) {
     const supabaseAdmin = createServiceClient();
-    
-    const { data: existingUser } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('id', userData.id)
-      .single();
 
-    if (!existingUser) {
-      console.log('➕ Creating new user entry with 48hr trial...');
-      const { error: insertError } = await supabaseAdmin.from('users').insert({
+    if (supabaseAdmin) {
+      const { data: existingUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('id', userData.id)
+        .single();
+
+      if (!existingUser) {
+        console.log('➕ Creating new user entry with 48hr trial...');
+        const { error: insertError } = await supabaseAdmin.from('users').insert({
+          id: userData.id,
+          email: userData.email,
+          subscription_status: 'trialing',
+          trial_start: new Date().toISOString(),
+          trial_end: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        });
+
+        if (insertError) {
+          console.error('❌ Failed to create user entry:', insertError);
+        } else {
+          console.log('✅ User entry created');
+        }
+      }
+    } else {
+      console.warn('⚠️  Service role key unavailable; skipping admin user bootstrap.');
+      // Attempt to upsert via session client as a best-effort fallback during local development
+      const { error: fallbackError } = await supabase.from('users').upsert({
         id: userData.id,
         email: userData.email,
         subscription_status: 'trialing',
@@ -154,10 +172,8 @@ export async function GET(request: NextRequest) {
         trial_end: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
       });
 
-      if (insertError) {
-        console.error('❌ Failed to create user entry:', insertError);
-      } else {
-        console.log('✅ User entry created');
+      if (fallbackError) {
+        console.error('❌ Fallback upsert failed (likely due to RLS):', fallbackError);
       }
     }
   }

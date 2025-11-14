@@ -73,7 +73,7 @@ function log(level: LogLevel, message: string, meta?: LogMeta) {
   }
 
   const consoleMethod = level === 'debug' ? 'log' : level;
-  (console as Record<string, (...args: unknown[]) => void>)[consoleMethod](JSON.stringify(payload));
+  (console as unknown as Record<string, (...args: unknown[]) => void>)[consoleMethod](JSON.stringify(payload));
 }
 
 export const logger = {

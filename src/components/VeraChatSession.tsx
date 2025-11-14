@@ -42,8 +42,13 @@ export default function VeraChatSession({ elevenLabsApiKey, elevenLabsVoiceId }:
               const audio = new Audio(audioUrl);
               audio.onplay = () => console.log('▶️ ElevenLabs audio playback started');
               audio.onended = () => console.log('✅ ElevenLabs audio playback ended');
-              audio.onerror = (e) => {
-                setTTSError('Audio playback error: ' + (e?.message || 'Unknown error'));
+              audio.onerror = (event) => {
+                const errorMessage =
+                  (event as any)?.message ||
+                  audio.error?.message ||
+                  audio.error?.code?.toString() ||
+                  'Unknown error';
+                setTTSError('Audio playback error: ' + errorMessage);
               };
               audio.play();
             });

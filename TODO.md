@@ -1,0 +1,5 @@
+- [x] Wire `/api/analyze` to detect whether the upload is an image or document
+- [x] For images: call GPT-4 vision API and return the analysis
+- [x] For PDFs: extract text (e.g., pdf-parse) and summarize via GPT model
+- [ ] Update frontend upload flow to hit `/api/analyze`
+- [ ] Exercise endpoint locally to confirm responses

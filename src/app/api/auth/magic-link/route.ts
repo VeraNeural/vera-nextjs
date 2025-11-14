@@ -42,7 +42,11 @@ export async function POST(request: NextRequest) {
     try {
       if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
         const supabaseAdmin = createServiceClient();
-        const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+
+        if (!supabaseAdmin) {
+          console.warn('Missing service client; skipping branded magic-link generation.');
+        } else {
+          const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
           type: 'magiclink',
           email,
         });
@@ -50,6 +54,7 @@ export async function POST(request: NextRequest) {
         const actionUrl = new URL(linkData.properties.action_link);
         token = actionUrl.searchParams.get('token');
         type = actionUrl.searchParams.get('type');
+        }
       } else {
         console.warn('Missing SUPABASE_SERVICE_ROLE_KEY; falling back to Supabase email.');
       }

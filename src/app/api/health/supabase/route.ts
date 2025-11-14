@@ -6,6 +6,13 @@ export async function GET() {
   try {
     const svc = createServiceClient();
 
+    if (!svc) {
+      return NextResponse.json(
+        { ok: false, error: 'service_role_key_missing' },
+        { status: 200 }
+      );
+    }
+
     // Perform a lightweight head/count query that bypasses RLS
     const { error, count } = await svc
       .from('users')
